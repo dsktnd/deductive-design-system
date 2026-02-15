@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateArchitectureImage, type Condition } from "@/lib/gemini";
+import { generateArchitectureImage, type Condition, type ReferenceImage } from "@/lib/gemini";
 
 export async function POST(request: NextRequest) {
   if (!process.env.GEMINI_API_KEY) {
@@ -9,7 +9,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: { prompt: string; style?: string; conditions?: Condition[] };
+  let body: {
+    prompt: string;
+    style?: string;
+    conditions?: Condition[];
+    abstractionLevel?: number;
+    referenceImages?: ReferenceImage[];
+  };
 
   try {
     body = await request.json();
@@ -20,7 +26,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { prompt, style, conditions } = body;
+  const { prompt, style, conditions, abstractionLevel, referenceImages } = body;
 
   if (!prompt || typeof prompt !== "string") {
     return NextResponse.json(
@@ -33,7 +39,9 @@ export async function POST(request: NextRequest) {
     const result = await generateArchitectureImage(
       prompt,
       conditions ?? [],
-      style
+      style,
+      abstractionLevel,
+      referenceImages
     );
 
     if (!result.imageBase64 || !result.mimeType) {

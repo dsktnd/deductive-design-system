@@ -14,7 +14,7 @@ interface GeneratedImage {
 }
 
 interface UseImageGenerationReturn {
-  generate: (prompt: string, conditions?: Condition[], style?: string) => Promise<void>;
+  generate: (prompt: string, conditions?: Condition[], style?: string, abstractionLevel?: number) => Promise<void>;
   isLoading: boolean;
   error: string | null;
   images: GeneratedImage[];
@@ -27,7 +27,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
   const [images, setImages] = useState<GeneratedImage[]>([]);
 
   const generate = useCallback(
-    async (prompt: string, conditions?: Condition[], style?: string) => {
+    async (prompt: string, conditions?: Condition[], style?: string, abstractionLevel?: number) => {
       setIsLoading(true);
       setError(null);
 
@@ -35,7 +35,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
         const response = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, conditions, style }),
+          body: JSON.stringify({ prompt, conditions, style, abstractionLevel }),
         });
 
         const data = await response.json();

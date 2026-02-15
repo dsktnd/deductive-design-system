@@ -114,7 +114,7 @@ function ComparisonCard({
   );
 }
 
-export default function DistillPage() {
+export default function DistillSection() {
   const { filteredDesigns } = useAppState();
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
