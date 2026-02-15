@@ -37,6 +37,7 @@ interface PersistedState {
   selectedConcepts: ArchitecturalConcept[];
   refinedConcept: RefinedConcept | null;
   sceneConstraint: string;
+  detailImages: Record<string, GeneratedImage>;
 }
 
 function loadState(): PersistedState {
@@ -67,6 +68,7 @@ function defaultState(): PersistedState {
     selectedConcepts: [],
     refinedConcept: null,
     sceneConstraint: "",
+    detailImages: {},
   };
 }
 
@@ -120,6 +122,10 @@ interface AppState {
   sceneConstraint: string;
   setSceneConstraint: (constraint: string) => void;
 
+  // Detail images (from Filter, used by Distill)
+  detailImages: Record<string, GeneratedImage>;
+  setDetailImages: (images: Record<string, GeneratedImage>) => void;
+
   // Export
   exportProcessLog: () => ProcessLog;
 }
@@ -138,6 +144,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [selectedConcepts, setSelectedConcepts] = useState<ArchitecturalConcept[]>([]);
   const [refinedConcept, setRefinedConcept] = useState<RefinedConcept | null>(null);
   const [sceneConstraint, setSceneConstraint] = useState("");
+  const [detailImages, setDetailImages] = useState<Record<string, GeneratedImage>>({});
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -152,6 +159,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSelectedConcepts(saved.selectedConcepts);
     setRefinedConcept(saved.refinedConcept);
     setSceneConstraint(saved.sceneConstraint);
+    setDetailImages(saved.detailImages);
     setInitialized(true);
   }, []);
 
@@ -169,8 +177,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       selectedConcepts,
       refinedConcept,
       sceneConstraint,
+      detailImages,
     });
-  }, [initialized, conditions, researchTheme, generatedDesigns, filteredDesigns, researchJobs, generateJobs, generateImages, selectedConcepts, refinedConcept, sceneConstraint]);
+  }, [initialized, conditions, researchTheme, generatedDesigns, filteredDesigns, researchJobs, generateJobs, generateImages, selectedConcepts, refinedConcept, sceneConstraint, detailImages]);
 
   const addCondition = useCallback((condition: ResearchCondition) => {
     setConditions((prev) => [...prev, condition]);
@@ -250,6 +259,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setRefinedConcept,
         sceneConstraint,
         setSceneConstraint,
+        detailImages,
+        setDetailImages,
         exportProcessLog,
       },
     },

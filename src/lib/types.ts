@@ -73,6 +73,12 @@ export interface GenerateJob {
   timestamp: string;
 }
 
+export interface DomainEvaluation {
+  domain: ResearchDomain;
+  score: number;
+  comment: string;
+}
+
 export interface ProcessLog {
   projectId: string;
   createdAt: string;

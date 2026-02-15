@@ -91,6 +91,7 @@ export default function FilterSection() {
     refinedConcept,
     setRefinedConcept,
     sceneConstraint,
+    setDetailImages,
   } = useAppState();
 
   const [isRefining, setIsRefining] = useState(false);
@@ -259,6 +260,21 @@ export default function FilterSection() {
         await new Promise((r) => setTimeout(r, 8000));
       }
     }
+
+    // Save completed images to store for Distill
+    // We track generated images via generatedRefs which accumulates during the loop
+    // Re-fetch from stageStatus to get full GeneratedImage objects
+    setStageStatus((currentStatus) => {
+      const result: Record<string, GeneratedImage> = {};
+      for (const stage of DETAIL_STAGES) {
+        const img = currentStatus[stage.key]?.image;
+        if (img) result[stage.key] = img;
+      }
+      if (Object.keys(result).length > 0) {
+        setDetailImages(result);
+      }
+      return currentStatus;
+    });
 
     setIsGeneratingDetails(false);
     setCurrentStageIndex(-1);
