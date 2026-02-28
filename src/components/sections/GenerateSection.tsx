@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { useAppState } from "@/lib/store";
-import { ABSTRACTION_LEVELS } from "@/lib/gemini";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useAppState, type AtmosphereState } from "@/lib/store";
+import { ABSTRACTION_LEVELS, configToPromptElements } from "@/lib/gemini";
 import type {
   GeneratedDesign,
   GeneratedImage,
   EvaluationScore,
   GenerateJob,
+  ArchitectureConfig,
+  ResearchCondition,
 } from "@/lib/types";
 
 const STYLES = [
@@ -17,6 +19,17 @@ const STYLES = [
 ] as const;
 
 const SPECTRUM_STEP_OPTIONS = [2, 3, 5, 7] as const;
+
+const ATMOSPHERE_PRESETS = [
+  { key: "minimal", ja: "ミニマル", en: "Minimal", prompt: "clean, minimal, white space, restrained" },
+  { key: "brutal", ja: "ブルータル", en: "Brutalist", prompt: "raw concrete, bold geometric, heavy mass" },
+  { key: "organic", ja: "有機的", en: "Organic", prompt: "flowing forms, natural curves, biomorphic" },
+  { key: "futuristic", ja: "未来的", en: "Futuristic", prompt: "sleek, parametric, advanced materials" },
+  { key: "vernacular", ja: "ヴァナキュラー", en: "Vernacular", prompt: "local materials, traditional craft, contextual" },
+  { key: "ethereal", ja: "幻想的", en: "Ethereal", prompt: "translucent, light-filled, dreamlike, atmospheric" },
+  { key: "industrial", ja: "インダストリアル", en: "Industrial", prompt: "exposed structure, raw materials, utilitarian" },
+  { key: "zen", ja: "禅", en: "Zen", prompt: "tranquil, empty space, natural materials, meditative" },
+] as const;
 
 const DOMAIN_LABELS: Record<string, string> = {
   environment: "環境",
@@ -260,6 +273,353 @@ function GenerateJobHistory({ jobs }: { jobs: GenerateJob[] }) {
   );
 }
 
+// --- Config Diff ---
+
+type ConfigDiffEntry = {
+  labelJa: string;
+  valueA: string;
+  valueB: string;
+};
+
+type BlendKeywordResult = {
+  ratio: number;
+  keywords: { axis: string; labelJa: string; blended: string | null }[];
+  summary: string[];
+};
+
+const CONFIG_AXES: {
+  labelJa: string;
+  getValue: (c: ArchitectureConfig) => string | null;
+}[] = [
+  { labelJa: "境界", getValue: (c) => c.boundary?.strategy ?? null },
+  { labelJa: "空間構造", getValue: (c) => c.spatial?.topology ?? null },
+  { labelJa: "大地", getValue: (c) => c.ground?.relation ?? null },
+  { labelJa: "光", getValue: (c) => c.light?.source_strategy ?? null },
+  { labelJa: "動線", getValue: (c) => c.movement?.path_topology?.type ?? null },
+  { labelJa: "スケール", getValue: (c) => c.scale?.human_relation ?? null },
+  { labelJa: "公私", getValue: (c) => c.social_gradient?.type ?? null },
+  { labelJa: "構造", getValue: (c) => c.tectonic?.expression ?? null },
+  { labelJa: "素材感", getValue: (c) => c.material?.weight_impression ?? null },
+  { labelJa: "色彩", getValue: (c) => c.color?.presence ?? null },
+  { labelJa: "断面", getValue: (c) => c.section?.dominant_profile ?? null },
+  { labelJa: "外内関係", getValue: (c) => c.facade_interior_relationship?.type ?? null },
+];
+
+function computeConfigDiff(
+  configA: ArchitectureConfig,
+  configB: ArchitectureConfig
+): ConfigDiffEntry[] {
+  const diffs: ConfigDiffEntry[] = [];
+
+  for (const axis of CONFIG_AXES) {
+    const vA = axis.getValue(configA);
+    const vB = axis.getValue(configB);
+    if (vA != null && vB != null && vA !== vB) {
+      diffs.push({ labelJa: axis.labelJa, valueA: vA, valueB: vB });
+    }
+  }
+
+  // material.primary comparison
+  const matA = configA.material?.primary ?? [];
+  const matB = configB.material?.primary ?? [];
+  const matAStr = [...matA].sort().join(", ");
+  const matBStr = [...matB].sort().join(", ");
+  if (matAStr && matBStr && matAStr !== matBStr) {
+    diffs.push({ labelJa: "素材", valueA: matAStr, valueB: matBStr });
+  }
+
+  return diffs;
+}
+
+function ConfigDiffPanel({
+  diffs,
+  ratios,
+  blendResults,
+}: {
+  diffs: ConfigDiffEntry[];
+  ratios: number[];
+  blendResults: BlendKeywordResult[];
+}) {
+  // Build a lookup: labelJa -> ratio -> blended keyword
+  const blendLookup = useMemo(() => {
+    const map = new Map<string, Map<number, string>>();
+    for (const br of blendResults) {
+      for (const kw of br.keywords) {
+        if (!kw.blended) continue;
+        if (!map.has(kw.labelJa)) map.set(kw.labelJa, new Map());
+        map.get(kw.labelJa)!.set(br.ratio, kw.blended);
+      }
+    }
+    return map;
+  }, [blendResults]);
+
+  return (
+    <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 px-4 py-3">
+      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+        Design Space の変化軸
+      </div>
+      <div className="space-y-2">
+        {diffs.map((d) => {
+          const axisBlend = blendLookup.get(d.labelJa);
+          return (
+            <div key={d.labelJa} className="flex items-center gap-2 text-[11px]">
+              <span className="w-16 shrink-0 text-right text-zinc-500">
+                {d.labelJa}
+              </span>
+              <span className="w-20 shrink-0 truncate text-right font-medium text-zinc-400">
+                {d.valueA}
+              </span>
+              <div className="relative h-2 flex-1 rounded-full bg-zinc-800">
+                {/* gradient track */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-zinc-600 to-zinc-400 opacity-40" />
+                {/* spectrum step dots */}
+                {ratios.map((ratio) => {
+                  const blended = axisBlend?.get(ratio);
+                  return (
+                    <div
+                      key={ratio}
+                      className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
+                      style={{ left: `${ratio}%` }}
+                    >
+                      <div className={`h-3 w-3 rounded-full border shadow-sm ${
+                        blended
+                          ? "border-zinc-400 bg-zinc-200"
+                          : "border-zinc-500 bg-zinc-300"
+                      }`} />
+                      <span className={`absolute left-1/2 top-full mt-0.5 -translate-x-1/2 whitespace-nowrap text-[8px] ${
+                        blended ? "font-medium text-zinc-300" : "font-mono text-zinc-500"
+                      }`}>
+                        {ratio === 0
+                          ? d.valueA
+                          : ratio === 100
+                          ? d.valueB
+                          : blended ?? `${100 - ratio}/${ratio}`}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <span className="w-20 shrink-0 truncate font-medium text-zinc-400">
+                {d.valueB}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Summary keywords per ratio */}
+      {blendResults.length > 0 && (
+        <div className="mt-4 border-t border-zinc-800 pt-3">
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            ブレンドキーワード（各ステップ）
+          </div>
+          <div className="space-y-2">
+            {blendResults.map((br) => (
+              <div key={br.ratio} className="flex items-start gap-2">
+                <span className="mt-0.5 w-12 shrink-0 text-right font-mono text-[10px] text-zinc-500">
+                  {100 - br.ratio}/{br.ratio}
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  {br.summary.map((s, i) => (
+                    <span
+                      key={i}
+                      className="rounded-full bg-zinc-200/10 px-2 py-0.5 text-[10px] font-medium text-zinc-300"
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {ratios.length > 2 && blendResults.length === 0 && (
+        <p className="mt-3 text-[10px] text-zinc-600">
+          各ドットはスペクトラム上の生成ポイント。左端＝A、右端＝B、中間はブレンド比率。
+        </p>
+      )}
+    </div>
+  );
+}
+
+// --- Research Context Panel (Issue #4) ---
+
+function ResearchContextPanel({
+  conditions,
+  researchTheme,
+  selectedConcepts,
+}: {
+  conditions: ResearchCondition[];
+  researchTheme: string;
+  selectedConcepts: { title: string; description: string; relatedDomains: string[] }[];
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  const activeConditions = conditions
+    .filter((c) => c.weight > 0 && (c.notes || c.tags.length > 0))
+    .sort((a, b) => b.weight - a.weight);
+
+  if (activeConditions.length === 0 && !researchTheme) return null;
+
+  const maxWeight = Math.max(...activeConditions.map((c) => c.weight), 0.01);
+  const totalTags = activeConditions.reduce((sum, c) => sum + c.tags.length, 0);
+  const hasConcepts = selectedConcepts.length >= 2;
+
+  return (
+    <div className="mt-5 rounded-lg border border-zinc-700/60 bg-zinc-900/60">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-zinc-800/40"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+            Research Context
+          </span>
+          {researchTheme && (
+            <span className="truncate text-sm text-zinc-300">{researchTheme}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-[10px] text-zinc-500">
+            <span>{activeConditions.length} domains</span>
+            <span>{totalTags} tags</span>
+            {hasConcepts && <span>2 concepts</span>}
+          </div>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`text-zinc-500 transition-transform ${expanded ? "rotate-180" : ""}`}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="border-t border-zinc-800 px-4 py-3">
+          {/* Condition weight bars */}
+          <div className="space-y-2">
+            {activeConditions.map((c) => {
+              const pct = (c.weight / maxWeight) * 100;
+              return (
+                <div key={c.domain}>
+                  <div className="mb-0.5 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-zinc-300">
+                        {domainLabel(c.domain)}
+                      </span>
+                      {c.tags.slice(0, 3).map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-500"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                      {c.tags.length > 3 && (
+                        <span className="text-[10px] text-zinc-600">+{c.tags.length - 3}</span>
+                      )}
+                    </div>
+                    <span className="font-mono text-[10px] text-zinc-500">
+                      {Math.round(c.weight * 100)}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+                    <div
+                      className="h-full rounded-full bg-zinc-400 transition-all duration-200"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  {c.notes && (
+                    <p className="mt-0.5 line-clamp-1 text-[10px] leading-relaxed text-zinc-600">
+                      {c.notes}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Concept summary */}
+          {hasConcepts && (
+            <div className="mt-3 flex gap-2 border-t border-zinc-800 pt-3">
+              {selectedConcepts.slice(0, 2).map((c, i) => (
+                <div key={i} className="flex-1 rounded border border-zinc-800 bg-zinc-900/40 px-3 py-2">
+                  <div className="text-[10px] font-semibold uppercase text-zinc-500">
+                    Concept {i === 0 ? "A" : "B"}
+                  </div>
+                  <div className="mt-0.5 text-xs font-medium text-zinc-300">{c.title}</div>
+                  <p className="mt-0.5 line-clamp-2 text-[10px] text-zinc-500">{c.description}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- Atmosphere Selector (Issue #1) ---
+
+function AtmosphereSelector({
+  selectedPresets,
+  customAtmosphere,
+  onTogglePreset,
+  onCustomChange,
+}: {
+  selectedPresets: string[];
+  customAtmosphere: string;
+  onTogglePreset: (key: string) => void;
+  onCustomChange: (value: string) => void;
+}) {
+  return (
+    <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/40 px-4 py-3">
+      <label className="mb-1 block text-xs font-medium text-zinc-400">
+        Atmosphere / 雰囲気
+      </label>
+      <p className="mb-2.5 text-[10px] text-zinc-500">
+        生成画像のビジュアルムード・トーンを指定します。複数選択可。
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {ATMOSPHERE_PRESETS.map((preset) => {
+          const isSelected = selectedPresets.includes(preset.key);
+          return (
+            <button
+              key={preset.key}
+              onClick={() => onTogglePreset(preset.key)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                isSelected
+                  ? "border-zinc-400 bg-zinc-200 text-zinc-900"
+                  : "border-zinc-700 bg-zinc-800 text-zinc-400 hover:border-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              {preset.ja}
+              <span className="ml-1 text-[10px] opacity-70">{preset.en}</span>
+            </button>
+          );
+        })}
+      </div>
+      <input
+        type="text"
+        value={customAtmosphere}
+        onChange={(e) => onCustomChange(e.target.value)}
+        placeholder="Custom atmosphere keywords... (e.g. misty, warm golden hour, moody shadows)"
+        className="mt-2.5 w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none"
+      />
+    </div>
+  );
+}
+
 // --- Main Section ---
 
 export default function GenerateSection() {
@@ -270,10 +630,33 @@ export default function GenerateSection() {
     generateJobs,
     addGenerateJob,
     researchJobs,
+    researchTheme,
     exportProcessLog,
     selectedConcepts,
     setSceneConstraint: setStoreSceneConstraint,
+    atmosphere,
+    setAtmosphere,
   } = useAppState();
+
+  const selectedAtmospheres = atmosphere.presets;
+  const customAtmosphere = atmosphere.custom;
+
+  const handleToggleAtmospherePreset = useCallback(
+    (key: string) => {
+      const next = selectedAtmospheres.includes(key)
+        ? selectedAtmospheres.filter((k) => k !== key)
+        : [...selectedAtmospheres, key];
+      setAtmosphere({ ...atmosphere, presets: next });
+    },
+    [selectedAtmospheres, atmosphere, setAtmosphere]
+  );
+
+  const handleCustomAtmosphereChange = useCallback(
+    (value: string) => {
+      setAtmosphere({ ...atmosphere, custom: value });
+    },
+    [atmosphere, setAtmosphere]
+  );
 
   const [sceneConstraint, setSceneConstraint] = useState("");
   const [style, setStyle] = useState<string>(STYLES[0]);
@@ -291,6 +674,11 @@ export default function GenerateSection() {
     { ratio: number; image: GeneratedImage | null }[]
   >([]);
 
+  // Blend keywords per spectrum step
+  const [blendResults, setBlendResults] = useState<BlendKeywordResult[]>([]);
+  const [isBlendingKeywords, setIsBlendingKeywords] = useState(false);
+  const blendAbortRef = useRef<AbortController | null>(null);
+
   const hasConcepts = selectedConcepts.length >= 2;
 
   const topTwo = useMemo(() => {
@@ -301,13 +689,91 @@ export default function GenerateSection() {
     return sorted.length >= 2 ? [sorted[0], sorted[1]] : null;
   }, [conditions, hasConcepts]);
 
+  const configDiffs = useMemo(() => {
+    if (
+      hasConcepts &&
+      selectedConcepts[0]?.architectureConfig &&
+      selectedConcepts[1]?.architectureConfig
+    ) {
+      return computeConfigDiff(
+        selectedConcepts[0].architectureConfig,
+        selectedConcepts[1].architectureConfig
+      );
+    }
+    return [];
+  }, [hasConcepts, selectedConcepts]);
+
   const canSpectrum = hasConcepts || topTwo != null;
   const labelA = hasConcepts ? selectedConcepts[0].title : topTwo ? domainLabel(topTwo[0].domain) : "";
   const labelB = hasConcepts ? selectedConcepts[1].title : topTwo ? domainLabel(topTwo[1].domain) : "";
 
+  // Fetch blend keywords for each intermediate spectrum step
+  const configA = hasConcepts ? selectedConcepts[0]?.architectureConfig : undefined;
+  const configB = hasConcepts ? selectedConcepts[1]?.architectureConfig : undefined;
+  const configAJson = configA ? JSON.stringify(configA) : "";
+  const configBJson = configB ? JSON.stringify(configB) : "";
+
+  useEffect(() => {
+    if (!configA || !configB) {
+      setBlendResults([]);
+      return;
+    }
+
+    const ratios = generateSpectrumSteps(spectrumSteps);
+    const intermediateRatios = ratios.filter((r) => r > 0 && r < 100);
+    if (intermediateRatios.length === 0) {
+      setBlendResults([]);
+      return;
+    }
+
+    if (blendAbortRef.current) blendAbortRef.current.abort();
+    const controller = new AbortController();
+    blendAbortRef.current = controller;
+
+    setIsBlendingKeywords(true);
+
+    const blendTheme = selectedConcepts[0]?.title + " / " + selectedConcepts[1]?.title;
+
+    fetch("/api/architecture/blend-keywords", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ configA, configB, ratios: intermediateRatios, theme: blendTheme }),
+      signal: controller.signal,
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!controller.signal.aborted && data) {
+          setBlendResults(data.results ?? []);
+          setIsBlendingKeywords(false);
+        }
+      })
+      .catch((err) => {
+        if (err.name !== "AbortError") {
+          setIsBlendingKeywords(false);
+        }
+      });
+
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spectrumSteps, configAJson, configBJson]);
+
+  const atmospherePromptText = useMemo(() => {
+    const presetTexts: string[] = [];
+    for (const key of selectedAtmospheres) {
+      const found = ATMOSPHERE_PRESETS.find((p) => p.key === key);
+      if (found) presetTexts.push(found.prompt);
+    }
+    if (customAtmosphere.trim()) presetTexts.push(customAtmosphere.trim());
+    return presetTexts.join(", ");
+  }, [selectedAtmospheres, customAtmosphere]);
+
   const buildPromptForRatio = useCallback(
     (ratio: number): string => {
       const parts: string[] = [];
+
+      if (atmospherePromptText) {
+        parts.push(`[ATMOSPHERE / VISUAL MOOD] ${atmospherePromptText}`);
+      }
 
       if (sceneConstraint.trim()) {
         parts.push(`[SCENE CONSTRAINT — keep exactly the same across all variations] ${sceneConstraint.trim()}`);
@@ -337,6 +803,51 @@ export default function GenerateSection() {
             parts.push(`"${cB.title}" takes slight priority.`);
           }
         }
+
+        // Inject per-axis interpolation instructions using config diff + blend keywords
+        const cfgA = cA.architectureConfig;
+        const cfgB = cB.architectureConfig;
+        if (cfgA && cfgB && configDiffs.length > 0) {
+          // Find blend keywords for this ratio
+          const blendForRatio = blendResults.find((br) => br.ratio === ratio);
+          const blendKeywordMap = new Map<string, string>();
+          if (blendForRatio) {
+            for (const kw of blendForRatio.keywords) {
+              if (kw.blended) blendKeywordMap.set(kw.labelJa, kw.blended);
+            }
+          }
+
+          const axisInstructions = configDiffs.map((d) => {
+            const blendedKw = blendKeywordMap.get(d.labelJa);
+            if (aPercent >= 90) return `${d.labelJa}: ${d.valueA}`;
+            if (bPercent >= 90) return `${d.labelJa}: ${d.valueB}`;
+            if (blendedKw) return `${d.labelJa}: ${blendedKw} (blending ${d.valueA} → ${d.valueB} at ${aPercent}/${bPercent})`;
+            if (aPercent > 65) return `${d.labelJa}: primarily ${d.valueA}, with subtle ${d.valueB} influence`;
+            if (bPercent > 65) return `${d.labelJa}: primarily ${d.valueB}, with subtle ${d.valueA} influence`;
+            return `${d.labelJa}: between ${d.valueA} and ${d.valueB} (equal blend)`;
+          });
+          parts.push(`[ARCHITECTURAL CHARACTERISTICS — per-axis blending at ${aPercent}/${bPercent}]\n${axisInstructions.join("\n")}`);
+
+          // Also include blend summary keywords if available
+          if (blendForRatio && blendForRatio.summary.length > 0) {
+            parts.push(`[BLEND CHARACTER KEYWORDS] ${blendForRatio.summary.join(", ")}`);
+          }
+
+          // Also include shared (non-diff) config elements as constants
+          const sharedElements = cfgA ? configToPromptElements(cfgA).filter((e) => {
+            const bElements = configToPromptElements(cfgB!);
+            return bElements.includes(e);
+          }) : [];
+          if (sharedElements.length > 0) {
+            parts.push(`[SHARED ARCHITECTURAL CONSTANTS] ${sharedElements.join(", ")}`);
+          }
+        } else if (cfgA || cfgB) {
+          // Fallback: only one config available
+          const elements = cfgA ? configToPromptElements(cfgA) : configToPromptElements(cfgB!);
+          if (elements.length > 0) {
+            parts.push(`[ARCHITECTURAL CHARACTERISTICS] ${elements.join(", ")}`);
+          }
+        }
       } else if (topTwo) {
         const lA = domainLabel(topTwo[0].domain);
         const lB = domainLabel(topTwo[1].domain);
@@ -362,7 +873,7 @@ export default function GenerateSection() {
       }
       return parts.join(". ") || "Generate an architectural design";
     },
-    [sceneConstraint, topTwo, hasConcepts, selectedConcepts]
+    [sceneConstraint, topTwo, hasConcepts, selectedConcepts, configDiffs, blendResults, atmospherePromptText]
   );
 
   const handleGenerate = async () => {
@@ -537,6 +1048,13 @@ export default function GenerateSection() {
         条件の重み付けを連続的に変化させ、設計空間のグラデーションを探索します。
       </p>
 
+      {/* Research Context Panel (Issue #4) */}
+      <ResearchContextPanel
+        conditions={conditions}
+        researchTheme={researchTheme}
+        selectedConcepts={selectedConcepts}
+      />
+
       {/* Scene Constraint */}
       <div className="mt-5 rounded-lg border border-zinc-800 bg-zinc-900/40 px-4 py-3">
         <label className="mb-1 block text-xs font-medium text-zinc-400">
@@ -553,6 +1071,14 @@ export default function GenerateSection() {
           className="w-full resize-y rounded border border-zinc-600 bg-zinc-800 px-4 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-400 focus:outline-none"
         />
       </div>
+
+      {/* Atmosphere Selector (Issue #1) */}
+      <AtmosphereSelector
+        selectedPresets={selectedAtmospheres}
+        customAtmosphere={customAtmosphere}
+        onTogglePreset={handleToggleAtmospherePreset}
+        onCustomChange={handleCustomAtmosphereChange}
+      />
 
       {/* Abstraction Level */}
       <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/40 px-4 py-4">
@@ -666,6 +1192,23 @@ export default function GenerateSection() {
               <p className="mt-1.5 text-xs leading-relaxed text-zinc-400">{c.description}</p>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Config Diff Panel */}
+      {configDiffs.length > 0 && canSpectrum && (
+        <div className="mt-4">
+          <ConfigDiffPanel
+            diffs={configDiffs}
+            ratios={generateSpectrumSteps(spectrumSteps)}
+            blendResults={blendResults}
+          />
+          {isBlendingKeywords && (
+            <div className="mt-2 flex items-center gap-2 text-xs text-zinc-400">
+              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-zinc-500 border-t-zinc-200" />
+              ブレンドキーワードを生成中...
+            </div>
+          )}
         </div>
       )}
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import ProjectSelector from "./ProjectSelector";
 
 const NAV_ITEMS = [
   { id: "research", labelEn: "Research", labelJa: "リサーチ", icon: "R" },
@@ -44,13 +45,17 @@ export default function ProcessNav() {
   return (
     <header className="fixed top-0 left-0 right-0 z-40 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-sm">
       <div className="mx-auto flex h-14 max-w-screen-2xl items-center justify-between px-8">
-        <div className="flex items-baseline gap-3">
-          <h1 className="text-sm font-semibold tracking-widest text-zinc-100 uppercase">
-            Deductive Design
-          </h1>
-          <span className="text-[10px] tracking-wider text-zinc-500">
-            演繹的デザイン
-          </span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-baseline gap-3">
+            <h1 className="text-sm font-semibold tracking-widest text-zinc-100 uppercase">
+              Deductive Design
+            </h1>
+            <span className="text-[10px] tracking-wider text-zinc-500">
+              演繹的デザイン
+            </span>
+          </div>
+          <span className="text-zinc-700">|</span>
+          <ProjectSelector />
         </div>
 
         <nav className="flex items-center gap-1">

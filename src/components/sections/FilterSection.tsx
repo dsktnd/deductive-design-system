@@ -262,19 +262,26 @@ export default function FilterSection() {
     }
 
     // Save completed images to store for Distill
-    // We track generated images via generatedRefs which accumulates during the loop
-    // Re-fetch from stageStatus to get full GeneratedImage objects
-    setStageStatus((currentStatus) => {
-      const result: Record<string, GeneratedImage> = {};
-      for (const stage of DETAIL_STAGES) {
-        const img = currentStatus[stage.key]?.image;
-        if (img) result[stage.key] = img;
-      }
-      if (Object.keys(result).length > 0) {
-        setDetailImages(result);
-      }
-      return currentStatus;
-    });
+    // Use generatedRefs which accumulated during the loop
+    const detailResult: Record<string, GeneratedImage> = {};
+    for (const ref of generatedRefs) {
+      const stage = DETAIL_STAGES.find((s) => s.key === ref.key);
+      if (!stage) continue;
+      const status = stageStatus[ref.key] ?? null;
+      // stageStatus may be stale due to async; build from generatedRefs data
+      detailResult[ref.key] = {
+        id: `detail-${ref.key}-${Date.now()}`,
+        image: ref.dataUrl,
+        text: null,
+        prompt: "",
+        abstractionLevel: stage.abstractionLevel,
+        style: stage.style,
+        timestamp: new Date().toISOString(),
+      };
+    }
+    if (Object.keys(detailResult).length > 0) {
+      setDetailImages(detailResult);
+    }
 
     setIsGeneratingDetails(false);
     setCurrentStageIndex(-1);

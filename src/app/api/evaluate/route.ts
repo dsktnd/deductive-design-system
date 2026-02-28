@@ -31,6 +31,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const domainJaMap: Record<string, string> = {
+    environment: "環境",
+    market: "市場",
+    culture: "文化",
+    economy: "経済",
+    society: "社会",
+    technology: "技術",
+  };
+
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
@@ -65,17 +74,25 @@ Domains to evaluate: environment, market, culture, economy, society, technology
 For each domain:
 1. Score from 0-100 how well the design addresses this domain's conditions
 2. Provide a concise comment (2-3 sentences in Japanese) explaining what aspects of the design reflect this domain and what could be improved
+3. List 1-3 strengths (short phrases in Japanese) where the design excels for this domain
+4. List 1-3 improvements (short phrases in Japanese) that could better address this domain
+
+Also provide:
+- An overall score (weighted average considering condition weights)
+- An overall comment (2-3 sentences in Japanese) summarizing the design's comprehensive evaluation
 
 Respond in JSON format:
 {
   "evaluations": [
-    { "domain": "environment", "score": 75, "comment": "..." },
-    { "domain": "market", "score": 60, "comment": "..." },
-    { "domain": "culture", "score": 80, "comment": "..." },
-    { "domain": "economy", "score": 65, "comment": "..." },
-    { "domain": "society", "score": 70, "comment": "..." },
-    { "domain": "technology", "score": 55, "comment": "..." }
-  ]
+    { "domain": "environment", "domainJa": "環境", "score": 75, "comment": "...", "strengths": ["..."], "improvements": ["..."] },
+    { "domain": "market", "domainJa": "市場", "score": 60, "comment": "...", "strengths": ["..."], "improvements": ["..."] },
+    { "domain": "culture", "domainJa": "文化", "score": 80, "comment": "...", "strengths": ["..."], "improvements": ["..."] },
+    { "domain": "economy", "domainJa": "経済", "score": 65, "comment": "...", "strengths": ["..."], "improvements": ["..."] },
+    { "domain": "society", "domainJa": "社会", "score": 70, "comment": "...", "strengths": ["..."], "improvements": ["..."] },
+    { "domain": "technology", "domainJa": "技術", "score": 55, "comment": "...", "strengths": ["..."], "improvements": ["..."] }
+  ],
+  "overallScore": 68,
+  "overallComment": "..."
 }
 
 Respond ONLY with valid JSON, no markdown fences.`;
@@ -87,7 +104,19 @@ Respond ONLY with valid JSON, no markdown fences.`;
     const cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
     const parsed = JSON.parse(cleaned);
 
-    return NextResponse.json({ evaluations: parsed.evaluations });
+    // Ensure domainJa is populated
+    const evaluations = (parsed.evaluations || []).map((e: Record<string, unknown>) => ({
+      ...e,
+      domainJa: e.domainJa || domainJaMap[e.domain as string] || e.domain,
+      strengths: e.strengths || [],
+      improvements: e.improvements || [],
+    }));
+
+    return NextResponse.json({
+      evaluations,
+      overallScore: parsed.overallScore ?? Math.round(evaluations.reduce((sum: number, e: { score: number }) => sum + e.score, 0) / evaluations.length),
+      overallComment: parsed.overallComment ?? "",
+    });
   } catch (error) {
     console.error("Evaluation error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
