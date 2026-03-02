@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useAppState } from "@/lib/store";
+import { useStore } from "@/lib/store";
 import type { ProjectMeta } from "@/lib/types";
 
 interface Props {
@@ -9,16 +9,14 @@ interface Props {
 }
 
 export default function ProjectManager({ onClose }: Props) {
-  const {
-    projects,
-    currentProjectId,
-    switchProject,
-    deleteProject,
-    duplicateProject,
-    renameProject,
-    exportProject,
-    importProject,
-  } = useAppState();
+  const projects = useStore((s) => s.projects);
+  const currentProjectId = useStore((s) => s.currentProjectId);
+  const switchProject = useStore((s) => s.switchProject);
+  const deleteProject = useStore((s) => s.deleteProject);
+  const duplicateProject = useStore((s) => s.duplicateProject);
+  const renameProject = useStore((s) => s.renameProject);
+  const exportProject = useStore((s) => s.exportProject);
+  const importProject = useStore((s) => s.importProject);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");

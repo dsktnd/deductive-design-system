@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ProcessNav from "@/components/ProcessNav";
-import { AppProvider } from "@/lib/store";
+import { StoreInitializer } from "@/lib/store";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,10 +30,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-950 text-zinc-200`}
       >
-        <AppProvider>
+        <StoreInitializer>
           <ProcessNav />
           <main className="min-h-screen px-8 pt-20 pb-8">{children}</main>
-        </AppProvider>
+        </StoreInitializer>
       </body>
     </html>
   );

@@ -1,14 +1,8 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useEffect,
-  type ReactNode,
-} from "react";
-import React from "react";
+import { create } from "zustand";
+import { subscribeWithSelector } from "zustand/middleware";
+import { immer } from "zustand/middleware/immer";
 import type {
   ResearchCondition,
   GeneratedDesign,
@@ -21,6 +15,8 @@ import type {
   ProjectMeta,
 } from "./types";
 import { idbGet, idbSet, idbDelete } from "./storage";
+
+// --- Constants ---
 
 const PROJECTS_INDEX_KEY = "deductive-design-projects";
 const STATE_KEY_PREFIX = "deductive-design-state";
@@ -36,7 +32,7 @@ function generateId(): string {
   return `proj-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-// --- Project index helpers ---
+// --- Project index helpers (localStorage) ---
 
 function loadProjectIndex(): ProjectMeta[] {
   if (typeof window === "undefined") return [];
@@ -64,12 +60,12 @@ function saveCurrentProjectId(id: string) {
   localStorage.setItem(CURRENT_PROJECT_KEY, id);
 }
 
-// --- Migration: move legacy single-project data into the new structure ---
+// --- Migration ---
 
 async function migrateIfNeeded() {
   if (typeof window === "undefined") return;
   const index = loadProjectIndex();
-  if (index.length > 0) return; // already migrated
+  if (index.length > 0) return;
 
   const now = new Date().toISOString();
   const legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
@@ -86,10 +82,8 @@ async function migrateIfNeeded() {
     try {
       const parsed = JSON.parse(legacyRaw);
       if (parsed.researchTheme) defaultMeta.theme = parsed.researchTheme;
-      // Save to IndexedDB instead of localStorage
-      await idbSet(stateKeyFor(DEFAULT_PROJECT_ID), { ...defaultState(), ...parsed });
+      await idbSet(stateKeyFor(DEFAULT_PROJECT_ID), { ...defaultPersistedState(), ...parsed });
     } catch { /* ignore */ }
-    // Clean up legacy localStorage entry
     localStorage.removeItem(LEGACY_STORAGE_KEY);
   }
 
@@ -97,7 +91,7 @@ async function migrateIfNeeded() {
   saveCurrentProjectId(DEFAULT_PROJECT_ID);
 }
 
-// --- Persisted state ---
+// --- Persisted state shape ---
 
 interface RefinedConcept {
   title: string;
@@ -125,7 +119,7 @@ interface PersistedState {
   atmosphere: AtmosphereState;
 }
 
-function defaultState(): PersistedState {
+function defaultPersistedState(): PersistedState {
   return {
     conditions: [],
     researchTheme: "",
@@ -144,23 +138,23 @@ function defaultState(): PersistedState {
 }
 
 async function loadProjectState(projectId: string): Promise<PersistedState> {
-  if (typeof window === "undefined") return defaultState();
+  if (typeof window === "undefined") return defaultPersistedState();
   try {
     const data = await idbGet<PersistedState>(stateKeyFor(projectId));
-    if (data) return { ...defaultState(), ...data };
-    // Fallback: try localStorage (migration from old storage)
+    if (data) return { ...defaultPersistedState(), ...data };
     const raw = localStorage.getItem(stateKeyFor(projectId));
     if (raw) {
       const parsed = JSON.parse(raw);
-      const state = { ...defaultState(), ...parsed };
-      // Migrate to IndexedDB and remove from localStorage
+      const state = { ...defaultPersistedState(), ...parsed };
       await idbSet(stateKeyFor(projectId), state);
       localStorage.removeItem(stateKeyFor(projectId));
       return state;
     }
   } catch { /* ignore */ }
-  return defaultState();
+  return defaultPersistedState();
 }
+
+// --- Debounced save ---
 
 let saveQueued = false;
 let pendingSave: { projectId: string; state: PersistedState } | null = null;
@@ -180,67 +174,44 @@ function saveProjectState(projectId: string, state: PersistedState) {
   }
 }
 
-// --- Context ---
+// --- Zustand store ---
 
-interface AppState {
-  // Conditions
-  conditions: ResearchCondition[];
-  researchTheme: string;
+interface AppState extends PersistedState {
+  // Meta
+  initialized: boolean;
+  currentProjectId: string;
+  projects: ProjectMeta[];
+
+  // Research actions
   addCondition: (condition: ResearchCondition) => void;
   removeCondition: (index: number) => void;
   updateConditions: (conditions: ResearchCondition[]) => void;
   setResearchTheme: (theme: string) => void;
-
-  // Generated designs (for filter/distill)
-  generatedDesigns: GeneratedDesign[];
-  setGeneratedDesigns: (designs: GeneratedDesign[]) => void;
-  filteredDesigns: GeneratedDesign[];
-  setFilteredDesigns: (designs: GeneratedDesign[]) => void;
-
-  // Research jobs
   researchJobs: ResearchJob[];
   addResearchJob: (job: ResearchJob) => void;
   loadResearchJob: (jobId: string) => void;
-
-  // Generate jobs
-  generateJobs: GenerateJob[];
-  addGenerateJob: (job: GenerateJob) => void;
-
-  // Generate images (persisted across navigation)
-  generateImages: GeneratedImage[];
-  addGenerateImage: (image: GeneratedImage) => void;
-  clearGenerateImages: () => void;
-
-  // Concepts
   selectedConcepts: ArchitecturalConcept[];
   setSelectedConcepts: (concepts: ArchitecturalConcept[]) => void;
 
-  // Refined concept
+  // Generation actions
+  setGeneratedDesigns: (designs: GeneratedDesign[]) => void;
+  addGenerateJob: (job: GenerateJob) => void;
+  addGenerateImage: (image: GeneratedImage) => void;
+  clearGenerateImages: () => void;
+  setSceneConstraint: (constraint: string) => void;
+  setAtmosphere: (atmosphere: AtmosphereState) => void;
+
+  // Evaluation actions
+  setFilteredDesigns: (designs: GeneratedDesign[]) => void;
+  setDetailImages: (images: Record<string, GeneratedImage>) => void;
+  addEvaluationResult: (result: EvaluationResult) => void;
   refinedConcept: RefinedConcept | null;
   setRefinedConcept: (concept: RefinedConcept | null) => void;
-
-  // Scene constraint (shared between Generate and Filter)
-  sceneConstraint: string;
-  setSceneConstraint: (constraint: string) => void;
-
-  // Detail images (from Filter, used by Distill)
-  detailImages: Record<string, GeneratedImage>;
-  setDetailImages: (images: Record<string, GeneratedImage>) => void;
-
-  // Evaluation results (from Distill)
-  evaluationResults: EvaluationResult[];
-  addEvaluationResult: (result: EvaluationResult) => void;
-
-  // Atmosphere
-  atmosphere: AtmosphereState;
-  setAtmosphere: (atmosphere: AtmosphereState) => void;
 
   // Export
   exportProcessLog: () => ProcessLog;
 
   // Project management
-  currentProjectId: string;
-  projects: ProjectMeta[];
   createProject: (name: string, theme: string) => void;
   switchProject: (id: string) => void;
   deleteProject: (id: string) => void;
@@ -248,339 +219,335 @@ interface AppState {
   renameProject: (id: string, name: string) => void;
   exportProject: (id: string) => Promise<string>;
   importProject: (json: string) => void;
+
+  // Internal
+  _initialize: () => Promise<void>;
 }
 
-const AppContext = createContext<AppState | null>(null);
+function collectPersisted(state: AppState): PersistedState {
+  return {
+    conditions: state.conditions,
+    researchTheme: state.researchTheme,
+    generatedDesigns: state.generatedDesigns,
+    filteredDesigns: state.filteredDesigns,
+    researchJobs: state.researchJobs,
+    generateJobs: state.generateJobs,
+    generateImages: state.generateImages,
+    selectedConcepts: state.selectedConcepts,
+    refinedConcept: state.refinedConcept,
+    sceneConstraint: state.sceneConstraint,
+    detailImages: state.detailImages,
+    evaluationResults: state.evaluationResults,
+    atmosphere: state.atmosphere,
+  };
+}
 
-export function AppProvider({ children }: { children: ReactNode }) {
-  const [initialized, setInitialized] = useState(false);
-  const [currentProjectId, setCurrentProjectId] = useState(DEFAULT_PROJECT_ID);
-  const [projects, setProjects] = useState<ProjectMeta[]>([]);
-  const [conditions, setConditions] = useState<ResearchCondition[]>([]);
-  const [researchTheme, setResearchTheme] = useState("");
-  const [generatedDesigns, setGeneratedDesigns] = useState<GeneratedDesign[]>([]);
-  const [filteredDesigns, setFilteredDesigns] = useState<GeneratedDesign[]>([]);
-  const [researchJobs, setResearchJobs] = useState<ResearchJob[]>([]);
-  const [generateJobs, setGenerateJobs] = useState<GenerateJob[]>([]);
-  const [generateImages, setGenerateImages] = useState<GeneratedImage[]>([]);
-  const [selectedConcepts, setSelectedConcepts] = useState<ArchitecturalConcept[]>([]);
-  const [refinedConcept, setRefinedConcept] = useState<RefinedConcept | null>(null);
-  const [sceneConstraint, setSceneConstraint] = useState("");
-  const [detailImages, setDetailImages] = useState<Record<string, GeneratedImage>>({});
-  const [evaluationResults, setEvaluationResults] = useState<EvaluationResult[]>([]);
-  const [atmosphere, setAtmosphere] = useState<AtmosphereState>({ presets: [], custom: "" });
+export const useStore = create<AppState>()(
+  subscribeWithSelector(
+    immer((set, get) => ({
+      // Initial state
+      ...defaultPersistedState(),
+      initialized: false,
+      currentProjectId: DEFAULT_PROJECT_ID,
+      projects: [],
 
-  const applyState = useCallback((state: PersistedState) => {
-    setConditions(state.conditions);
-    setResearchTheme(state.researchTheme);
-    setGeneratedDesigns(state.generatedDesigns);
-    setFilteredDesigns(state.filteredDesigns);
-    setResearchJobs(state.researchJobs);
-    setGenerateJobs(state.generateJobs);
-    setGenerateImages(state.generateImages);
-    setSelectedConcepts(state.selectedConcepts);
-    setRefinedConcept(state.refinedConcept);
-    setSceneConstraint(state.sceneConstraint);
-    setDetailImages(state.detailImages);
-    setEvaluationResults(state.evaluationResults);
-    setAtmosphere(state.atmosphere);
-  }, []);
+      // --- Research actions ---
 
-  const collectState = useCallback((): PersistedState => ({
-    conditions,
-    researchTheme,
-    generatedDesigns,
-    filteredDesigns,
-    researchJobs,
-    generateJobs,
-    generateImages,
-    selectedConcepts,
-    refinedConcept,
-    sceneConstraint,
-    detailImages,
-    evaluationResults,
-    atmosphere,
-  }), [conditions, researchTheme, generatedDesigns, filteredDesigns, researchJobs, generateJobs, generateImages, selectedConcepts, refinedConcept, sceneConstraint, detailImages, evaluationResults, atmosphere]);
+      addCondition: (condition) =>
+        set((s) => { s.conditions.push(condition); }),
 
-  // Load from IndexedDB on mount (with migration)
-  useEffect(() => {
-    (async () => {
-      await migrateIfNeeded();
-      // Also migrate any remaining localStorage project states to IndexedDB
-      const projId = loadCurrentProjectId();
-      const projectList = loadProjectIndex();
-      for (const p of projectList) {
-        const lsKey = stateKeyFor(p.id);
-        const raw = localStorage.getItem(lsKey);
-        if (raw) {
+      removeCondition: (index) =>
+        set((s) => { s.conditions.splice(index, 1); }),
+
+      updateConditions: (conditions) =>
+        set((s) => { s.conditions = conditions; }),
+
+      setResearchTheme: (theme) =>
+        set((s) => { s.researchTheme = theme; }),
+
+      addResearchJob: (job) =>
+        set((s) => { s.researchJobs.push(job); }),
+
+      loadResearchJob: (jobId) => {
+        const job = get().researchJobs.find((j) => j.id === jobId);
+        if (job) {
+          set((s) => { s.conditions = job.conditions; });
+        }
+      },
+
+      setSelectedConcepts: (concepts) =>
+        set((s) => { s.selectedConcepts = concepts; }),
+
+      // --- Generation actions ---
+
+      setGeneratedDesigns: (designs) =>
+        set((s) => { s.generatedDesigns = designs; }),
+
+      addGenerateJob: (job) =>
+        set((s) => { s.generateJobs.push(job); }),
+
+      addGenerateImage: (image) =>
+        set((s) => { s.generateImages.push(image); }),
+
+      clearGenerateImages: () =>
+        set((s) => { s.generateImages = []; }),
+
+      setSceneConstraint: (constraint) =>
+        set((s) => { s.sceneConstraint = constraint; }),
+
+      setAtmosphere: (atmosphere) =>
+        set((s) => { s.atmosphere = atmosphere; }),
+
+      // --- Evaluation actions ---
+
+      setFilteredDesigns: (designs) =>
+        set((s) => { s.filteredDesigns = designs; }),
+
+      setDetailImages: (images) =>
+        set((s) => { s.detailImages = images; }),
+
+      addEvaluationResult: (result) =>
+        set((s) => { s.evaluationResults.push(result); }),
+
+      setRefinedConcept: (concept) =>
+        set((s) => { s.refinedConcept = concept; }),
+
+      // --- Export ---
+
+      exportProcessLog: (): ProcessLog => {
+        const s = get();
+        return {
+          projectId: s.currentProjectId,
+          createdAt: s.researchJobs[0]?.timestamp ?? new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          researchJobs: s.researchJobs,
+          generateJobs: s.generateJobs,
+          generatedDesigns: s.generatedDesigns,
+          filteredDesigns: s.filteredDesigns,
+        };
+      },
+
+      // --- Project management ---
+
+      createProject: (name, theme) => {
+        const s = get();
+        saveProjectState(s.currentProjectId, collectPersisted(s));
+
+        const now = new Date().toISOString();
+        const newId = generateId();
+        const newMeta: ProjectMeta = { id: newId, name, theme, createdAt: now, updatedAt: now };
+        const newState = { ...defaultPersistedState(), researchTheme: theme };
+        saveProjectState(newId, newState);
+        saveCurrentProjectId(newId);
+
+        set((d) => {
+          d.projects.push(newMeta);
+          saveProjectIndex(d.projects);
+          Object.assign(d, newState);
+          d.currentProjectId = newId;
+        });
+      },
+
+      switchProject: (id) => {
+        const s = get();
+        if (id === s.currentProjectId) return;
+        saveProjectState(s.currentProjectId, collectPersisted(s));
+
+        loadProjectState(id).then((state) => {
+          saveCurrentProjectId(id);
+          set((d) => {
+            Object.assign(d, state);
+            d.currentProjectId = id;
+          });
+        });
+      },
+
+      deleteProject: (id) => {
+        const idx = loadProjectIndex();
+        if (idx.length <= 1) return;
+
+        const updated = idx.filter((p) => p.id !== id);
+        saveProjectIndex(updated);
+        idbDelete(stateKeyFor(id));
+        try { localStorage.removeItem(stateKeyFor(id)); } catch { /* ignore */ }
+
+        const s = get();
+        if (id === s.currentProjectId) {
+          const next = updated[0];
+          loadProjectState(next.id).then((state) => {
+            saveCurrentProjectId(next.id);
+            set((d) => {
+              d.projects = updated;
+              Object.assign(d, state);
+              d.currentProjectId = next.id;
+            });
+          });
+        } else {
+          set((d) => { d.projects = updated; });
+        }
+      },
+
+      duplicateProject: (id) => {
+        const s = get();
+        if (id === s.currentProjectId) {
+          saveProjectState(s.currentProjectId, collectPersisted(s));
+        }
+
+        const source = s.projects.find((p) => p.id === id);
+        if (!source) return;
+
+        const now = new Date().toISOString();
+        const newId = generateId();
+        const newMeta: ProjectMeta = {
+          id: newId,
+          name: `${source.name} (copy)`,
+          theme: source.theme,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        loadProjectState(id).then((sourceState) => {
+          saveProjectState(newId, sourceState);
+        });
+
+        set((d) => {
+          d.projects.push(newMeta);
+          saveProjectIndex(d.projects);
+        });
+      },
+
+      renameProject: (id, name) =>
+        set((d) => {
+          const p = d.projects.find((p) => p.id === id);
+          if (p) {
+            p.name = name;
+            p.updatedAt = new Date().toISOString();
+          }
+          saveProjectIndex(d.projects);
+        }),
+
+      exportProject: async (id): Promise<string> => {
+        const s = get();
+        if (id === s.currentProjectId) {
+          saveProjectState(s.currentProjectId, collectPersisted(s));
+        }
+        const meta = s.projects.find((p) => p.id === id);
+        const state = await loadProjectState(id);
+        return JSON.stringify({ meta, state }, null, 2);
+      },
+
+      importProject: (json) => {
+        const data = JSON.parse(json);
+        const now = new Date().toISOString();
+        const newId = generateId();
+
+        const meta: ProjectMeta = {
+          id: newId,
+          name: data.meta?.name ?? "Imported",
+          theme: data.meta?.theme ?? "",
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        const state: PersistedState = { ...defaultPersistedState(), ...(data.state ?? data) };
+        saveProjectState(newId, state);
+        saveCurrentProjectId(newId);
+
+        set((d) => {
+          d.projects.push(meta);
+          saveProjectIndex(d.projects);
+          Object.assign(d, state);
+          d.currentProjectId = newId;
+        });
+      },
+
+      // --- Initialization ---
+
+      _initialize: async () => {
+        if (get().initialized) return;
+        await migrateIfNeeded();
+
+        const projectList = loadProjectIndex();
+        for (const p of projectList) {
+          const lsKey = stateKeyFor(p.id);
           try {
-            const parsed = JSON.parse(raw);
-            await idbSet(lsKey, { ...defaultState(), ...parsed });
-            localStorage.removeItem(lsKey);
+            const raw = localStorage.getItem(lsKey);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              await idbSet(lsKey, { ...defaultPersistedState(), ...parsed });
+              localStorage.removeItem(lsKey);
+            }
           } catch { /* ignore */ }
         }
-      }
-      setCurrentProjectId(projId);
-      setProjects(projectList);
-      const state = await loadProjectState(projId);
-      applyState(state);
-      setInitialized(true);
-    })();
-  }, [applyState]);
 
-  // Persist to localStorage on every change
-  useEffect(() => {
-    if (!initialized) return;
-    saveProjectState(currentProjectId, collectState());
-    setProjects((prev) => {
-      const updated = prev.map((p) =>
-        p.id === currentProjectId ? { ...p, updatedAt: new Date().toISOString() } : p
-      );
-      saveProjectIndex(updated);
-      return updated;
-    });
-  }, [initialized, currentProjectId, collectState]);
+        const projId = loadCurrentProjectId();
+        const state = await loadProjectState(projId);
 
-  // --- Existing actions ---
-
-  const addCondition = useCallback((condition: ResearchCondition) => {
-    setConditions((prev) => [...prev, condition]);
-  }, []);
-
-  const removeCondition = useCallback((index: number) => {
-    setConditions((prev) => prev.filter((_, i) => i !== index));
-  }, []);
-
-  const updateConditions = useCallback((newConditions: ResearchCondition[]) => {
-    setConditions(newConditions);
-  }, []);
-
-  const addResearchJob = useCallback((job: ResearchJob) => {
-    setResearchJobs((prev) => [...prev, job]);
-  }, []);
-
-  const loadResearchJob = useCallback((jobId: string) => {
-    setResearchJobs((prev) => {
-      const job = prev.find((j) => j.id === jobId);
-      if (job) {
-        setConditions(job.conditions);
-      }
-      return prev;
-    });
-  }, []);
-
-  const addGenerateJob = useCallback((job: GenerateJob) => {
-    setGenerateJobs((prev) => [...prev, job]);
-  }, []);
-
-  const addGenerateImage = useCallback((image: GeneratedImage) => {
-    setGenerateImages((prev) => [...prev, image]);
-  }, []);
-
-  const clearGenerateImages = useCallback(() => {
-    setGenerateImages([]);
-  }, []);
-
-  const addEvaluationResult = useCallback((result: EvaluationResult) => {
-    setEvaluationResults((prev) => [...prev, result]);
-  }, []);
-
-  const exportProcessLog = useCallback((): ProcessLog => {
-    return {
-      projectId: currentProjectId,
-      createdAt: researchJobs[0]?.timestamp ?? new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      researchJobs,
-      generateJobs,
-      generatedDesigns,
-      filteredDesigns,
-    };
-  }, [currentProjectId, researchJobs, generateJobs, generatedDesigns, filteredDesigns]);
-
-  // --- Project management actions ---
-
-  const createProject = useCallback((name: string, theme: string) => {
-    saveProjectState(currentProjectId, collectState());
-
-    const now = new Date().toISOString();
-    const newId = generateId();
-    const newMeta: ProjectMeta = { id: newId, name, theme, createdAt: now, updatedAt: now };
-
-    setProjects((prev) => {
-      const updated = [...prev, newMeta];
-      saveProjectIndex(updated);
-      return updated;
-    });
-
-    const newState = { ...defaultState(), researchTheme: theme };
-    saveProjectState(newId, newState);
-    applyState(newState);
-    setCurrentProjectId(newId);
-    saveCurrentProjectId(newId);
-  }, [currentProjectId, collectState, applyState]);
-
-  const switchProject = useCallback((id: string) => {
-    if (id === currentProjectId) return;
-    saveProjectState(currentProjectId, collectState());
-    loadProjectState(id).then((state) => {
-      applyState(state);
-      setCurrentProjectId(id);
-      saveCurrentProjectId(id);
-    });
-  }, [currentProjectId, collectState, applyState]);
-
-  const deleteProject = useCallback((id: string) => {
-    const idx = loadProjectIndex();
-    if (idx.length <= 1) return;
-
-    const updated = idx.filter((p) => p.id !== id);
-    saveProjectIndex(updated);
-    setProjects(updated);
-    idbDelete(stateKeyFor(id));
-    // Also clean up any leftover localStorage entry
-    localStorage.removeItem(stateKeyFor(id));
-
-    if (id === currentProjectId) {
-      const next = updated[0];
-      loadProjectState(next.id).then((state) => {
-        applyState(state);
-        setCurrentProjectId(next.id);
-        saveCurrentProjectId(next.id);
-      });
-    }
-  }, [currentProjectId, applyState]);
-
-  const duplicateProject = useCallback((id: string) => {
-    if (id === currentProjectId) {
-      saveProjectState(currentProjectId, collectState());
-    }
-
-    const idx = loadProjectIndex();
-    const source = idx.find((p) => p.id === id);
-    if (!source) return;
-
-    const now = new Date().toISOString();
-    const newId = generateId();
-    const newMeta: ProjectMeta = {
-      id: newId,
-      name: `${source.name} (copy)`,
-      theme: source.theme,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    loadProjectState(id).then((sourceState) => {
-      saveProjectState(newId, sourceState);
-    });
-
-    setProjects((prev) => {
-      const updated = [...prev, newMeta];
-      saveProjectIndex(updated);
-      return updated;
-    });
-  }, [currentProjectId, collectState]);
-
-  const renameProject = useCallback((id: string, name: string) => {
-    setProjects((prev) => {
-      const updated = prev.map((p) =>
-        p.id === id ? { ...p, name, updatedAt: new Date().toISOString() } : p
-      );
-      saveProjectIndex(updated);
-      return updated;
-    });
-  }, []);
-
-  const exportProject = useCallback(async (id: string): Promise<string> => {
-    if (id === currentProjectId) {
-      saveProjectState(currentProjectId, collectState());
-    }
-    const idx = loadProjectIndex();
-    const meta = idx.find((p) => p.id === id);
-    const state = await loadProjectState(id);
-    return JSON.stringify({ meta, state }, null, 2);
-  }, [currentProjectId, collectState]);
-
-  const importProject = useCallback((json: string) => {
-    const data = JSON.parse(json);
-    const now = new Date().toISOString();
-    const newId = generateId();
-
-    const meta: ProjectMeta = {
-      id: newId,
-      name: data.meta?.name ?? "Imported",
-      theme: data.meta?.theme ?? "",
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    const state: PersistedState = { ...defaultState(), ...(data.state ?? data) };
-    saveProjectState(newId, state);
-
-    setProjects((prev) => {
-      const updated = [...prev, meta];
-      saveProjectIndex(updated);
-      return updated;
-    });
-
-    applyState(state);
-    setCurrentProjectId(newId);
-    saveCurrentProjectId(newId);
-  }, [applyState]);
-
-  return React.createElement(
-    AppContext.Provider,
-    {
-      value: {
-        conditions,
-        researchTheme,
-        addCondition,
-        removeCondition,
-        updateConditions,
-        setResearchTheme,
-        generatedDesigns,
-        setGeneratedDesigns,
-        filteredDesigns,
-        setFilteredDesigns,
-        researchJobs,
-        addResearchJob,
-        loadResearchJob,
-        generateJobs,
-        addGenerateJob,
-        generateImages,
-        addGenerateImage,
-        clearGenerateImages,
-        selectedConcepts,
-        setSelectedConcepts,
-        refinedConcept,
-        setRefinedConcept,
-        sceneConstraint,
-        setSceneConstraint,
-        detailImages,
-        setDetailImages,
-        evaluationResults,
-        addEvaluationResult,
-        atmosphere,
-        setAtmosphere,
-        exportProcessLog,
-        currentProjectId,
-        projects,
-        createProject,
-        switchProject,
-        deleteProject,
-        duplicateProject,
-        renameProject,
-        exportProject,
-        importProject,
+        set((d) => {
+          d.currentProjectId = projId;
+          d.projects = projectList;
+          Object.assign(d, state);
+          d.initialized = true;
+        });
       },
+    }))
+  )
+);
+
+// --- Auto-persist: subscribe to persisted state changes ---
+
+if (typeof window !== "undefined") {
+  // Persist on every state change (debounced via saveProjectState)
+  const PERSISTED_KEYS: (keyof PersistedState)[] = [
+    "conditions", "researchTheme", "generatedDesigns", "filteredDesigns",
+    "researchJobs", "generateJobs", "generateImages", "selectedConcepts",
+    "refinedConcept", "sceneConstraint", "detailImages", "evaluationResults",
+    "atmosphere",
+  ];
+
+  useStore.subscribe(
+    (state) => PERSISTED_KEYS.map((k) => state[k]),
+    () => {
+      const s = useStore.getState();
+      if (!s.initialized) return;
+      saveProjectState(s.currentProjectId, collectPersisted(s));
+      // Update project's updatedAt timestamp
+      const proj = s.projects.find((p) => p.id === s.currentProjectId);
+      if (proj) {
+        const now = new Date().toISOString();
+        const updated = s.projects.map((p) =>
+          p.id === s.currentProjectId ? { ...p, updatedAt: now } : p
+        );
+        saveProjectIndex(updated);
+        useStore.setState({ projects: updated });
+      }
     },
-    children
+    { equalityFn: (a, b) => a.every((v, i) => v === b[i]) }
   );
 }
 
+// --- Compatibility: useAppState hook ---
+// Returns the full store. Consumers that import useAppState continue to work.
+// For optimal re-renders, consumers should migrate to:
+//   const conditions = useStore((s) => s.conditions);
+
 export function useAppState() {
-  const context = useContext(AppContext);
-  if (!context) {
-    throw new Error("useAppState must be used within an AppProvider");
-  }
-  return context;
+  return useStore();
 }
+
+// --- StoreInitializer component (replaces AppProvider) ---
+
+export function StoreInitializer({ children }: { children: React.ReactNode }) {
+  const initialized = useStore((s) => s.initialized);
+  const initialize = useStore((s) => s._initialize);
+
+  // Trigger initialization on mount
+  if (typeof window !== "undefined" && !initialized) {
+    initialize();
+  }
+
+  return children as React.ReactElement;
+}
+
+// Keep AppProvider as alias for backward compatibility
+export const AppProvider = StoreInitializer;

@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useAppState } from "@/lib/store";
+import { useStore } from "@/lib/store";
 import ProjectManager from "./ProjectManager";
 
 export default function ProjectSelector() {
-  const { projects, currentProjectId, switchProject, createProject } = useAppState();
+  const projects = useStore((s) => s.projects);
+  const currentProjectId = useStore((s) => s.currentProjectId);
+  const switchProject = useStore((s) => s.switchProject);
+  const createProject = useStore((s) => s.createProject);
   const [open, setOpen] = useState(false);
   const [managerOpen, setManagerOpen] = useState(false);
   const [newName, setNewName] = useState("");
