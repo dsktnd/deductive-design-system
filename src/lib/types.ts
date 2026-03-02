@@ -241,3 +241,13 @@ export interface ProcessLog {
   generatedDesigns: GeneratedDesign[];
   filteredDesigns: GeneratedDesign[];
 }
+
+export interface DomainState {
+  notes: string;
+  weight: number;
+  tags: string[];
+  findings?: ResearchFinding[];
+  weightRationale?: string;
+  relatedDomains?: ResearchDomain[];
+  isResearching?: boolean;
+}

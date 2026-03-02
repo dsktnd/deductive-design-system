@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
-import { ResearchDomain, type ResearchCondition, type ResearchFinding, type ResearchJob, type ArchitecturalConcept, type ArchitectureConfig } from "@/lib/types";
+import { useState, useCallback, useRef, useEffect, lazy, Suspense } from "react";
+import { ResearchDomain, type ResearchCondition, type ResearchFinding, type ResearchJob, type ArchitecturalConcept, type ArchitectureConfig, type DomainState } from "@/lib/types";
 import { useAppState } from "@/lib/store";
+
+const ResearchGraph = lazy(() => import("@/components/ResearchGraph"));
 
 const DOMAINS: { key: ResearchDomain; ja: string; en: string }[] = [
   { key: ResearchDomain.Environment, ja: "環境", en: "Environment" },
@@ -28,16 +30,6 @@ const FINDING_CONFIG: Record<string, { label: string; labelJa: string; color: st
   risk: { label: "Risks", labelJa: "リスク", color: "text-red-400", bg: "bg-red-400/10" },
   opportunity: { label: "Opportunities", labelJa: "機会", color: "text-emerald-400", bg: "bg-emerald-400/10" },
 };
-
-interface DomainState {
-  notes: string;
-  weight: number;
-  tags: string[];
-  findings?: ResearchFinding[];
-  weightRationale?: string;
-  relatedDomains?: ResearchDomain[];
-  isResearching?: boolean;
-}
 
 function createInitialState(): Record<ResearchDomain, DomainState> {
   const state = {} as Record<ResearchDomain, DomainState>;
@@ -1148,6 +1140,7 @@ export default function ResearchSection() {
 
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateError, setTranslateError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"cards" | "graph">("cards");
 
   const [hasRestored, setHasRestored] = useState(false);
   if (!hasRestored && conditions.length > 0) {
@@ -1528,30 +1521,73 @@ export default function ResearchSection() {
         )}
       </div>
 
-      {/* Domain Cards + Summary */}
-      <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[1fr_300px]">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {DOMAINS.map((d) => (
-            <DomainCard
-              key={d.key}
-              domain={d}
-              state={domainState[d.key]}
-              onChange={handleChange}
-              onOpenDetail={() => setDetailModal(d.key)}
-              onResearchDomain={() => handleResearchDomain(d.key)}
-            />
-          ))}
-        </div>
-
-        <aside className="xl:sticky xl:top-20 xl:self-start">
-          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500">
-            Condition Summary
-          </h3>
-          <SummaryPanel domains={DOMAINS} state={domainState} />
-
-          <JobHistory jobs={researchJobs} onLoad={handleLoadJob} />
-        </aside>
+      {/* View Mode Toggle */}
+      <div className="mt-6 flex items-center gap-1 rounded-lg border border-zinc-800 bg-zinc-900/60 p-1 w-fit">
+        <button
+          onClick={() => setViewMode("cards")}
+          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+            viewMode === "cards"
+              ? "bg-zinc-700 text-zinc-100"
+              : "text-zinc-500 hover:text-zinc-300"
+          }`}
+        >
+          Cards
+        </button>
+        <button
+          onClick={() => setViewMode("graph")}
+          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+            viewMode === "graph"
+              ? "bg-zinc-700 text-zinc-100"
+              : "text-zinc-500 hover:text-zinc-300"
+          }`}
+        >
+          Graph
+        </button>
       </div>
+
+      {/* Domain Cards + Summary / Graph */}
+      {viewMode === "cards" ? (
+        <div className="mt-4 grid grid-cols-1 gap-6 xl:grid-cols-[1fr_300px]">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {DOMAINS.map((d) => (
+              <DomainCard
+                key={d.key}
+                domain={d}
+                state={domainState[d.key]}
+                onChange={handleChange}
+                onOpenDetail={() => setDetailModal(d.key)}
+                onResearchDomain={() => handleResearchDomain(d.key)}
+              />
+            ))}
+          </div>
+
+          <aside className="xl:sticky xl:top-20 xl:self-start">
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500">
+              Condition Summary
+            </h3>
+            <SummaryPanel domains={DOMAINS} state={domainState} />
+
+            <JobHistory jobs={researchJobs} onLoad={handleLoadJob} />
+          </aside>
+        </div>
+      ) : (
+        <div className="mt-4">
+          <Suspense
+            fallback={
+              <div className="flex h-[600px] items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900">
+                <span className="text-sm text-zinc-500">グラフを読み込み中...</span>
+              </div>
+            }
+          >
+            <ResearchGraph
+              theme={theme}
+              domainState={domainState}
+              concepts={concepts}
+              onOpenDomainDetail={(domain) => setDetailModal(domain)}
+            />
+          </Suspense>
+        </div>
+      )}
 
       {/* Concept Proposal Section */}
       {activeCount > 0 && (
