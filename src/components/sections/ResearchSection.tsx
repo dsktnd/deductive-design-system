@@ -36,6 +36,8 @@ export default function ResearchSection() {
   const [isProposingConcepts, setIsProposingConcepts] = useState(false);
   const [conceptError, setConceptError] = useState<string | null>(null);
   const [weightsChangedSinceConcept, setWeightsChangedSinceConcept] = useState(false);
+  const [researchingDomains, setResearchingDomains] = useState<Set<string>>(new Set());
+  const [completedDomains, setCompletedDomains] = useState(0);
 
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateError, setTranslateError] = useState<string | null>(null);
@@ -79,12 +81,22 @@ export default function ResearchSection() {
     if (!theme.trim()) return;
     setIsResearching(true);
     setResearchError(null);
+    setCompletedDomains(0);
+    setResearchingDomains(new Set(DOMAINS.map((d) => d.key)));
+    // Mark all domains as researching in the domain state
+    setDomainState((prev) => {
+      const next = { ...prev };
+      for (const d of DOMAINS) {
+        next[d.key] = { ...next[d.key], isResearching: true };
+      }
+      return next;
+    });
 
     try {
       const res = await fetch("/api/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ theme: theme.trim() }),
+        body: JSON.stringify({ theme: theme.trim(), stream: true }),
       });
 
       if (!res.ok) {
@@ -92,49 +104,93 @@ export default function ResearchSection() {
         throw new Error(data.error || `Request failed (${res.status})`);
       }
 
-      const data = await res.json();
-      const domains = data.domains;
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No response body");
 
-      if (domains) {
-        const newState = { ...domainState };
-        for (const d of DOMAINS) {
-          const result = domains[d.key];
-          if (result) {
-            newState[d.key] = {
-              notes: result.notes || "",
-              weight: typeof result.weight === "number" ? result.weight : 50,
-              tags: Array.isArray(result.tags) ? result.tags : [],
-              findings: Array.isArray(result.findings) ? result.findings : undefined,
-              weightRationale: typeof result.weight_rationale === "string" ? result.weight_rationale : undefined,
-              relatedDomains: Array.isArray(result.related_domains) ? result.related_domains : undefined,
-            };
+      const decoder = new TextDecoder();
+      let buffer = "";
+      const accumulated: Record<string, DomainState> = { ...domainState };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const json = line.slice(6);
+          try {
+            const event = JSON.parse(json);
+            if (event.type === "domain") {
+              const result = event.result;
+              const key = event.domain as ResearchDomain;
+              accumulated[key] = {
+                notes: result.notes || "",
+                weight: typeof result.weight === "number" ? result.weight : 50,
+                tags: Array.isArray(result.tags) ? result.tags : [],
+                findings: Array.isArray(result.findings) ? result.findings : undefined,
+                weightRationale: typeof result.weight_rationale === "string" ? result.weight_rationale : undefined,
+                relatedDomains: Array.isArray(result.related_domains) ? result.related_domains : undefined,
+                isResearching: false,
+              };
+              setDomainState((prev) => ({ ...prev, [key]: accumulated[key] }));
+              setResearchingDomains((prev) => {
+                const next = new Set(prev);
+                next.delete(event.domain);
+                return next;
+              });
+              setCompletedDomains((prev) => prev + 1);
+            } else if (event.type === "error") {
+              setResearchingDomains((prev) => {
+                const next = new Set(prev);
+                next.delete(event.domain);
+                return next;
+              });
+              setCompletedDomains((prev) => prev + 1);
+            }
+          } catch {
+            // skip malformed SSE line
           }
         }
-        setDomainState(newState);
-
-        const jobConditions: ResearchCondition[] = DOMAINS.map((d) => ({
-          domain: d.key,
-          notes: newState[d.key].notes,
-          weight: newState[d.key].weight / 100,
-          tags: newState[d.key].tags,
-          findings: newState[d.key].findings,
-          weightRationale: newState[d.key].weightRationale,
-          relatedDomains: newState[d.key].relatedDomains,
-        }));
-
-        const job: ResearchJob = {
-          id: `research-${Date.now()}`,
-          theme: theme.trim(),
-          conditions: jobConditions,
-          timestamp: new Date().toISOString(),
-        };
-        addResearchJob(job);
       }
+
+      // Save research job with final state
+      const jobConditions: ResearchCondition[] = DOMAINS.map((d) => ({
+        domain: d.key,
+        notes: accumulated[d.key].notes,
+        weight: accumulated[d.key].weight / 100,
+        tags: accumulated[d.key].tags,
+        findings: accumulated[d.key].findings,
+        weightRationale: accumulated[d.key].weightRationale,
+        relatedDomains: accumulated[d.key].relatedDomains,
+      }));
+
+      const job: ResearchJob = {
+        id: `research-${Date.now()}`,
+        theme: theme.trim(),
+        conditions: jobConditions,
+        timestamp: new Date().toISOString(),
+      };
+      addResearchJob(job);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Research failed";
       setResearchError(message);
     } finally {
       setIsResearching(false);
+      setResearchingDomains(new Set());
+      // Clear any remaining isResearching flags
+      setDomainState((prev) => {
+        const next = { ...prev };
+        for (const d of DOMAINS) {
+          if (next[d.key].isResearching) {
+            next[d.key] = { ...next[d.key], isResearching: false };
+          }
+        }
+        return next;
+      });
     }
   };
 
@@ -410,9 +466,24 @@ export default function ResearchSection() {
           </button>
         </div>
         {isResearching && (
-          <div className="mt-3 flex items-center gap-2 text-sm text-zinc-400">
+          <div className="mt-3 flex items-center gap-3 text-sm text-zinc-400">
             <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-zinc-200" />
-            6つの領域を分析中...
+            <span>{completedDomains}/{DOMAINS.length} 領域を分析中...</span>
+            <div className="flex gap-1">
+              {DOMAINS.map((d) => (
+                <div
+                  key={d.key}
+                  className={`h-2 w-6 rounded-full transition-colors duration-300 ${
+                    researchingDomains.has(d.key)
+                      ? "animate-pulse bg-zinc-500"
+                      : completedDomains > 0 && !researchingDomains.has(d.key)
+                      ? "bg-emerald-500"
+                      : "bg-zinc-700"
+                  }`}
+                  title={d.ja}
+                />
+              ))}
+            </div>
           </div>
         )}
         {researchError && (

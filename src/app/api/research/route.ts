@@ -10,13 +10,38 @@ const DOMAINS = [
   { key: "technology", ja: "技術", en: "Technology", question: "何が技術的に可能か" },
 ];
 
+function buildDomainPrompt(theme: string, domain: typeof DOMAINS[number]): string {
+  return `あなたは建築・都市デザインのリサーチャーです。以下のテーマについて、「${domain.ja}（${domain.en}）」の観点からリサーチを行ってください。
+
+テーマ: ${theme}
+
+問い: ${domain.question}
+
+以下の形式でJSONのみ回答してください:
+{
+  "findings": [
+    { "type": "fact", "text": "事実の記述" },
+    { "type": "implication", "text": "示唆の記述" },
+    { "type": "risk", "text": "リスクの記述" },
+    { "type": "opportunity", "text": "機会の記述" }
+  ],
+  "notes": "調査結果の要約テキスト",
+  "tags": ["tag1", "tag2", "tag3"],
+  "weight": 75,
+  "weight_rationale": "なぜこの重要度か",
+  "related_domains": ["economy", "society"]
+}
+
+findings は各カテゴリ1-3個、tags は3-5個のキータグ、weight は0-100の重要度、related_domainsは関連が強い他のドメイン名（${DOMAINS.map(d => d.key).join(", ")}から選択）。`;
+}
+
 export async function POST(req: NextRequest) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "GEMINI_API_KEY is not configured" }, { status: 500 });
   }
 
-  let body: { theme: string };
+  let body: { theme: string; stream?: boolean };
   try {
     body = await req.json();
   } catch {
@@ -27,61 +52,71 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "theme is required" }, { status: 400 });
   }
 
+  const theme = body.theme.trim();
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-  const prompt = `あなたは建築・都市デザインのリサーチャーです。以下のテーマ・コンセプトについて、6つの領域から多角的にリサーチを行い、それぞれの領域での知見・条件・考慮すべき点を構造化してまとめてください。
+  // SSE streaming mode: each domain streams back as it completes
+  if (body.stream) {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        // Fire all domain requests in parallel
+        const promises = DOMAINS.map(async (domain) => {
+          try {
+            const prompt = buildDomainPrompt(theme, domain);
+            const result = await model.generateContent(prompt);
+            const text = result.response.text();
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: "error", domain: domain.key, error: "Failed to parse" })}\n\n`)
+              );
+              return;
+            }
+            const parsed = JSON.parse(jsonMatch[0]);
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ type: "domain", domain: domain.key, result: parsed })}\n\n`)
+            );
+          } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Unknown error";
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ type: "error", domain: domain.key, error: message })}\n\n`)
+            );
+          }
+        });
 
-テーマ: ${body.theme.trim()}
+        await Promise.all(promises);
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`));
+        controller.close();
+      },
+    });
 
-以下の6領域について、それぞれ調査結果をまとめてください。各領域につき:
-- findings: 「事実(fact)」「示唆(implication)」「リスク(risk)」「機会(opportunity)」の4カテゴリに分類した知見（各カテゴリ1-3個）
-- notes: 調査結果の要約テキスト
-- tags: 3-5個のキータグ（短いキーワード）
-- weight: 0-100の重要度
-- weight_rationale: なぜこの重要度かの理由（1文）
-- related_domains: 関連が強い他のドメイン名の配列
-
-${DOMAINS.map((d, i) => `${i + 1}. ${d.ja}（${d.en}）: ${d.question}`).join("\n")}
-
-以下のJSON形式で回答してください。他の文字は含めないでください:
-{
-  "domains": {
-    "environment": {
-      "findings": [
-        { "type": "fact", "text": "事実の記述" },
-        { "type": "implication", "text": "示唆の記述" },
-        { "type": "risk", "text": "リスクの記述" },
-        { "type": "opportunity", "text": "機会の記述" }
-      ],
-      "notes": "調査結果の要約テキスト",
-      "tags": ["tag1", "tag2", "tag3"],
-      "weight": 75,
-      "weight_rationale": "なぜこの重要度か",
-      "related_domains": ["economy", "society"]
-    },
-    "market": { ... },
-    "culture": { ... },
-    "economy": { ... },
-    "society": { ... },
-    "technology": { ... }
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
   }
-}`;
 
-  try {
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return NextResponse.json({ error: "Failed to parse research results", raw: text }, { status: 422 });
+  // Legacy non-streaming mode (backward compatible)
+  const allDomains: Record<string, unknown> = {};
+  const promises = DOMAINS.map(async (domain) => {
+    try {
+      const prompt = buildDomainPrompt(theme, domain);
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        allDomains[domain.key] = JSON.parse(jsonMatch[0]);
+      }
+    } catch {
+      // skip failed domain
     }
+  });
 
-    const parsed = JSON.parse(jsonMatch[0]);
-    return NextResponse.json(parsed);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Research API error:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+  await Promise.all(promises);
+  return NextResponse.json({ domains: allDomains });
 }
