@@ -1,22 +1,15 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import {
   ResearchDomain,
   type DomainState,
   type ArchitecturalConcept,
 } from "@/lib/types";
+import { buildResearchGraph } from "@/lib/graph/buildResearchGraph";
+import { useForceLayout } from "@/lib/graph/useForceLayout";
 
 // --- Constants ---
-
-const DOMAIN_LABELS: Record<string, string> = {
-  environment: "環境",
-  market: "マーケット",
-  culture: "文化・歴史",
-  economy: "経済",
-  society: "社会",
-  technology: "技術",
-};
 
 const FINDING_TYPE_COLORS: Record<string, string> = {
   fact: "#60a5fa",       // blue-400
@@ -25,320 +18,7 @@ const FINDING_TYPE_COLORS: Record<string, string> = {
   opportunity: "#34d399", // emerald-400
 };
 
-// Domain colors — 6 distinct hues for each research domain
-const DOMAIN_COLORS: Record<string, string> = {
-  environment: "#4ade80", // green-400
-  market: "#f472b6",      // pink-400
-  culture: "#c084fc",     // purple-400
-  economy: "#facc15",     // yellow-400
-  society: "#38bdf8",     // sky-400
-  technology: "#fb923c",  // orange-400
-};
-
-// Concept A = cyan/teal, Concept B = rose/orange
-const CONCEPT_COLORS = ["#22d3ee", "#fb923c"] as const; // cyan-400, orange-400
 const CONCEPT_LABELS = ["A", "B"] as const;
-
-// --- Types ---
-
-type NodeType = "finding" | "concept";
-
-interface GraphNode {
-  id: string;
-  type: NodeType;
-  label: string;
-  r: number;
-  color: string;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  fixed?: boolean;
-  // metadata
-  domainKey?: ResearchDomain;
-  findingStarred?: boolean;
-  conceptIndex?: number; // 0=A, 1=B
-  fullText?: string; // original finding text for similarity
-}
-
-interface GraphEdge {
-  source: string;
-  target: string;
-  type: "cross-domain" | "concept-domain" | "similarity";
-  weight: number; // 0-1, used for stroke width/opacity
-  color?: string; // concept-colored edges
-}
-
-// --- Text similarity (character trigram Jaccard) ---
-
-function trigrams(text: string): Set<string> {
-  const s = new Set<string>();
-  const clean = text.replace(/\s+/g, "");
-  for (let i = 0; i <= clean.length - 3; i++) {
-    s.add(clean.slice(i, i + 3));
-  }
-  return s;
-}
-
-function similarity(a: string, b: string): number {
-  const ta = trigrams(a);
-  const tb = trigrams(b);
-  if (ta.size === 0 || tb.size === 0) return 0;
-  let intersection = 0;
-  for (const t of ta) {
-    if (tb.has(t)) intersection++;
-  }
-  return intersection / (ta.size + tb.size - intersection); // Jaccard
-}
-
-// --- Build graph data from domain state ---
-
-function buildGraph(
-  _theme: string,
-  domainState: Record<ResearchDomain, DomainState>,
-  concepts: ArchitecturalConcept[]
-): { nodes: GraphNode[]; edges: GraphEdge[]; domainConceptMap: Map<string, number[]> } {
-  const nodes: GraphNode[] = [];
-  const edges: GraphEdge[] = [];
-  const domainKeys = Object.values(ResearchDomain);
-
-  // 1. Pre-compute which concepts each domain belongs to
-  const domainConceptMap = new Map<string, number[]>();
-  for (let ci = 0; ci < concepts.length && ci < 2; ci++) {
-    for (const rd of concepts[ci].relatedDomains) {
-      // Match case-insensitively to handle API response variations
-      const matched = domainKeys.find(
-        (dk) => dk.toLowerCase() === rd.toLowerCase()
-      );
-      if (matched) {
-        const existing = domainConceptMap.get(matched) ?? [];
-        if (!existing.includes(ci)) existing.push(ci);
-        domainConceptMap.set(matched, existing);
-      }
-    }
-  }
-
-  // 2. Concept anchor nodes — A on left, B on right
-  const hasConcepts = concepts.length >= 2;
-  for (let ci = 0; ci < concepts.length && ci < 2; ci++) {
-    const concept = concepts[ci];
-    const cId = `concept-${concept.id}`;
-    const color = CONCEPT_COLORS[ci] ?? "#a78bfa";
-    // Spread A/B apart horizontally
-    const x = ci === 0 ? -180 : 180;
-
-    nodes.push({
-      id: cId,
-      type: "concept",
-      label: concept.title,
-      r: 26,
-      color,
-      x,
-      y: 0,
-      vx: 0,
-      vy: 0,
-      conceptIndex: ci,
-    });
-  }
-
-  // 3. Finding nodes — connect directly to concept(s) via parent domain
-  let findingIdx = 0;
-  for (const key of domainKeys) {
-    const ds = domainState[key];
-    const findings = ds.findings ?? [];
-    // Try exact match first, then case-insensitive
-    let cis = domainConceptMap.get(key) ?? [];
-    if (cis.length === 0) {
-      // Fallback: try case-insensitive matching
-      for (const [mapKey, mapVal] of domainConceptMap.entries()) {
-        if (mapKey.toLowerCase() === key.toLowerCase()) {
-          cis = mapVal;
-          break;
-        }
-      }
-    }
-
-    for (let i = 0; i < findings.length; i++) {
-      const f = findings[i];
-      if (f.excluded) continue;
-
-      const fId = `finding-${key}-${i}`;
-      const starred = !!f.starred;
-      const r = starred ? 10 : 7;
-
-      // Color by research domain
-      const nodeColor = DOMAIN_COLORS[key] ?? "#a1a1aa";
-
-      // Initial position: scatter around the concept(s) they belong to
-      let initX = 0;
-      let initY = 0;
-      if (hasConcepts && cis.length === 1) {
-        const side = cis[0] === 0 ? -1 : 1;
-        initX = side * (60 + Math.random() * 120);
-        initY = (findingIdx % 8 - 4) * 25 + (Math.random() - 0.5) * 30;
-      } else if (hasConcepts && cis.length === 2) {
-        initX = (Math.random() - 0.5) * 100;
-        initY = (findingIdx % 6 - 3) * 30 + (Math.random() - 0.5) * 30;
-      } else {
-        // No specific concept affiliation — spread evenly
-        const angle = (findingIdx / Math.max(findings.length, 6)) * Math.PI * 2;
-        const dist = 80 + Math.random() * 60;
-        initX = Math.cos(angle) * dist;
-        initY = Math.sin(angle) * dist;
-      }
-
-      nodes.push({
-        id: fId,
-        type: "finding",
-        label: f.text.length > 24 ? f.text.slice(0, 24) + "…" : f.text,
-        r,
-        color: nodeColor,
-        x: initX,
-        y: initY,
-        vx: 0,
-        vy: 0,
-        domainKey: key,
-        findingStarred: starred,
-        fullText: f.text,
-      });
-
-      // Edges: finding → concept(s) it belongs to
-      if (hasConcepts && cis.length > 0) {
-        for (const ci of cis) {
-          const concept = concepts[ci];
-          edges.push({
-            source: `concept-${concept.id}`,
-            target: fId,
-            type: "concept-domain",
-            weight: starred ? 0.7 : 0.4,
-            color: CONCEPT_COLORS[ci],
-          });
-        }
-      } else if (hasConcepts) {
-        // No concept affiliation — connect to BOTH concepts with weak edges
-        // so the finding stays in the visible area
-        for (let ci = 0; ci < concepts.length && ci < 2; ci++) {
-          const concept = concepts[ci];
-          edges.push({
-            source: `concept-${concept.id}`,
-            target: fId,
-            type: "concept-domain",
-            weight: 0.15,
-            color: "#52525b", // neutral gray for unaffiliated
-          });
-        }
-      }
-
-      findingIdx++;
-    }
-  }
-
-  // 4. Similarity edges between findings (text trigram Jaccard)
-  const findingNodes = nodes.filter((n) => n.type === "finding" && n.fullText);
-  const SIM_THRESHOLD = 0.08; // minimum similarity to draw an edge
-  const MAX_SIM_EDGES = 40;   // cap to keep graph readable
-
-  // Compute all pairwise similarities, keep top ones
-  const simPairs: { i: number; j: number; sim: number }[] = [];
-  for (let i = 0; i < findingNodes.length; i++) {
-    for (let j = i + 1; j < findingNodes.length; j++) {
-      const sim = similarity(findingNodes[i].fullText!, findingNodes[j].fullText!);
-      if (sim >= SIM_THRESHOLD) {
-        simPairs.push({ i, j, sim });
-      }
-    }
-  }
-  // Sort by similarity descending, take top N
-  simPairs.sort((a, b) => b.sim - a.sim);
-  for (const pair of simPairs.slice(0, MAX_SIM_EDGES)) {
-    edges.push({
-      source: findingNodes[pair.i].id,
-      target: findingNodes[pair.j].id,
-      type: "similarity",
-      weight: pair.sim,
-    });
-  }
-
-  return { nodes, edges, domainConceptMap };
-}
-
-// --- Force simulation ---
-
-function simulate(
-  nodes: GraphNode[],
-  edges: GraphEdge[],
-  dragId: string | null
-) {
-  const alpha = 0.3;
-  const repulsion = 3000;
-  const springLength = 100;
-  const springStrength = 0.005;
-  const centerPull = 0.01;
-  const damping = 0.85;
-
-  // Center gravity
-  for (const n of nodes) {
-    if (n.fixed) continue;
-    n.vx -= n.x * centerPull;
-    n.vy -= n.y * centerPull;
-  }
-
-  // Node repulsion
-  for (let i = 0; i < nodes.length; i++) {
-    for (let j = i + 1; j < nodes.length; j++) {
-      const a = nodes[i];
-      const b = nodes[j];
-      const dx = b.x - a.x;
-      const dy = b.y - a.y;
-      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      const force = repulsion / (dist * dist);
-      const fx = (dx / dist) * force;
-      const fy = (dy / dist) * force;
-
-      if (!a.fixed) { a.vx -= fx; a.vy -= fy; }
-      if (!b.fixed) { b.vx += fx; b.vy += fy; }
-    }
-  }
-
-  // Edge springs
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
-  for (const e of edges) {
-    const s = nodeMap.get(e.source);
-    const t = nodeMap.get(e.target);
-    if (!s || !t) continue;
-
-    const dx = t.x - s.x;
-    const dy = t.y - s.y;
-    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    // Similarity edges: stronger similarity → shorter rest length, stronger pull
-    const restLength = e.type === "similarity"
-      ? springLength * (1 - e.weight * 0.6) // high sim → shorter
-      : springLength;
-    const strength = e.type === "similarity"
-      ? springStrength * (1 + e.weight * 3)  // high sim → stronger spring
-      : springStrength * (1 + e.weight);
-    const displacement = dist - restLength;
-    const force = displacement * strength;
-    const fx = (dx / dist) * force;
-    const fy = (dy / dist) * force;
-
-    if (!s.fixed) { s.vx += fx; s.vy += fy; }
-    if (!t.fixed) { t.vx -= fx; t.vy -= fy; }
-  }
-
-  // Apply velocities
-  let totalMovement = 0;
-  for (const n of nodes) {
-    if (n.fixed || n.id === dragId) continue;
-    n.vx *= damping;
-    n.vy *= damping;
-    n.x += n.vx * alpha;
-    n.y += n.vy * alpha;
-    totalMovement += Math.abs(n.vx) + Math.abs(n.vy);
-  }
-
-  return totalMovement;
-}
 
 // --- Component ---
 
@@ -356,16 +36,8 @@ export default function ResearchGraph({
   onOpenDomainDetail,
 }: ResearchGraphProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const nodesRef = useRef<GraphNode[]>([]);
-  const edgesRef = useRef<GraphEdge[]>([]);
-  const domainConceptMapRef = useRef<Map<string, number[]>>(new Map());
-  const frameRef = useRef<number>(0);
-  const frameCountRef = useRef(0);
-  const runningRef = useRef(false);
 
-  const [renderTick, setRenderTick] = useState(0);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
-  const [dragId, setDragId] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
 
   // Pan & zoom
@@ -383,43 +55,22 @@ export default function ResearchGraph({
     return count;
   }, [domainState]);
 
-  // Build graph when data changes
-  useEffect(() => {
-    const { nodes, edges, domainConceptMap } = buildGraph(theme, domainState, concepts);
-    nodesRef.current = nodes;
-    edgesRef.current = edges;
-    domainConceptMapRef.current = domainConceptMap;
-    runningRef.current = true;
-    frameCountRef.current = 0;
-  }, [theme, domainState, concepts]);
+  // Build graph data
+  const graphData = useMemo(
+    () => buildResearchGraph(theme, domainState, concepts),
+    [theme, domainState, concepts]
+  );
 
-  // Animation loop
-  useEffect(() => {
-    const tick = () => {
-      if (!runningRef.current) {
-        frameRef.current = requestAnimationFrame(tick);
-        return;
-      }
-
-      const movement = simulate(nodesRef.current, edgesRef.current, dragId);
-      frameCountRef.current++;
-
-      // Throttle React renders to every 2 frames
-      if (frameCountRef.current % 2 === 0) {
-        setRenderTick((t) => t + 1);
-      }
-
-      // Auto-stop when converged
-      if (movement < 0.5 && frameCountRef.current > 60) {
-        runningRef.current = false;
-      }
-
-      frameRef.current = requestAnimationFrame(tick);
-    };
-
-    frameRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frameRef.current);
-  }, [dragId]);
+  // Force layout
+  const {
+    nodesRef,
+    edgesRef,
+    renderTick,
+    dragId,
+    runningRef,
+    frameCountRef,
+    setDragId,
+  } = useForceLayout({ nodes: graphData.nodes, edges: graphData.edges });
 
   // Hover connections
   const connectedSet = useMemo(() => {
@@ -447,7 +98,7 @@ export default function ResearchGraph({
         (e.target as Element).setPointerCapture(e.pointerId);
       }
     },
-    []
+    [nodesRef, setDragId, runningRef, frameCountRef]
   );
 
   const handlePointerMove = useCallback(
@@ -475,7 +126,7 @@ export default function ResearchGraph({
         }));
       }
     },
-    [dragId, transform.x, transform.y, transform.scale]
+    [dragId, transform.x, transform.y, transform.scale, nodesRef, runningRef, frameCountRef]
   );
 
   const handlePointerUp = useCallback(() => {
@@ -485,7 +136,7 @@ export default function ResearchGraph({
       setDragId(null);
     }
     isPanningRef.current = false;
-  }, [dragId]);
+  }, [dragId, nodesRef, setDragId]);
 
   // Pan (background drag)
   const handleBgPointerDown = useCallback(
@@ -521,7 +172,7 @@ export default function ResearchGraph({
         onOpenDomainDetail(node.domainKey);
       }
     },
-    [onOpenDomainDetail]
+    [onOpenDomainDetail, nodesRef]
   );
 
   // Hover
@@ -543,7 +194,7 @@ export default function ResearchGraph({
         });
       }
     },
-    [domainState]
+    [domainState, nodesRef]
   );
 
   const handleNodeLeave = useCallback(() => {
@@ -710,7 +361,7 @@ export default function ResearchGraph({
                   pointerEvents="none"
                   style={{ userSelect: "none" }}
                 >
-                  {n.label.length > 16 ? n.label.slice(0, 16) + "…" : n.label}
+                  {n.label.length > 16 ? n.label.slice(0, 16) + "\u2026" : n.label}
                 </text>
                 {/* Star indicator */}
                 {n.findingStarred && (
