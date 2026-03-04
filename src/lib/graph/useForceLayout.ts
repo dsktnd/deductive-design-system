@@ -41,6 +41,30 @@ function simulate(
     }
   }
 
+  // Domain clustering — same-domain findings attract each other
+  const clusterStrength = 0.002;
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const a = nodes[i];
+      const b = nodes[j];
+      if (
+        a.type !== "finding" ||
+        b.type !== "finding" ||
+        !a.domainKey ||
+        a.domainKey !== b.domainKey
+      )
+        continue;
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      const force = (dist - 40) * clusterStrength; // rest distance 40px within cluster
+      const fx = (dx / dist) * force;
+      const fy = (dy / dist) * force;
+      if (!a.fixed) { a.vx += fx; a.vy += fy; }
+      if (!b.fixed) { b.vx -= fx; b.vy -= fy; }
+    }
+  }
+
   // Edge springs
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
   for (const e of edges) {

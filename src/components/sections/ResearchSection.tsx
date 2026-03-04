@@ -13,6 +13,7 @@ import ConfigComparisonTable from "./research/ConfigComparisonTable";
 import ConceptBlendPanel from "./research/ConceptBlendPanel";
 
 const ResearchGraph = lazy(() => import("@/components/ResearchGraph"));
+import CorrelationMatrix from "./research/CorrelationMatrix";
 
 // --- Main Section ---
 
@@ -41,7 +42,7 @@ export default function ResearchSection() {
 
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateError, setTranslateError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"cards" | "graph">("cards");
+  const [viewMode, setViewMode] = useState<"cards" | "graph" | "matrix">("cards");
 
   const [hasRestored, setHasRestored] = useState(false);
   if (!hasRestored && conditions.length > 0) {
@@ -513,9 +514,19 @@ export default function ResearchSection() {
         >
           Graph
         </button>
+        <button
+          onClick={() => setViewMode("matrix")}
+          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+            viewMode === "matrix"
+              ? "bg-zinc-700 text-zinc-100"
+              : "text-zinc-500 hover:text-zinc-300"
+          }`}
+        >
+          Matrix
+        </button>
       </div>
 
-      {/* Domain Cards + Summary / Graph */}
+      {/* Domain Cards + Summary / Graph / Matrix */}
       {viewMode === "cards" ? (
         <div className="mt-4 grid grid-cols-1 gap-6 xl:grid-cols-[1fr_300px]">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -540,7 +551,7 @@ export default function ResearchSection() {
             <JobHistory jobs={researchJobs} onLoad={handleLoadJob} />
           </aside>
         </div>
-      ) : (
+      ) : viewMode === "graph" ? (
         <div className="mt-4">
           <Suspense
             fallback={
@@ -556,6 +567,10 @@ export default function ResearchSection() {
               onOpenDomainDetail={(domain) => setDetailModal(domain)}
             />
           </Suspense>
+        </div>
+      ) : (
+        <div className="mt-4">
+          <CorrelationMatrix domainState={domainState} />
         </div>
       )}
 

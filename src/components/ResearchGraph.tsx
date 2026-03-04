@@ -11,6 +11,52 @@ import { useForceLayout } from "@/lib/graph/useForceLayout";
 
 // --- Constants ---
 
+const DOMAIN_COLORS: Record<string, string> = {
+  environment: "#4ade80",
+  market: "#f472b6",
+  culture: "#c084fc",
+  economy: "#facc15",
+  society: "#38bdf8",
+  technology: "#fb923c",
+};
+
+/** Compute convex hull of 2D points (Graham scan) */
+function convexHull(points: { x: number; y: number }[]): { x: number; y: number }[] {
+  if (points.length < 3) return points;
+  const pts = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
+  const cross = (o: { x: number; y: number }, a: { x: number; y: number }, b: { x: number; y: number }) =>
+    (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  const lower: { x: number; y: number }[] = [];
+  for (const p of pts) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  const upper: { x: number; y: number }[] = [];
+  for (const p of pts.reverse()) {
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  upper.pop();
+  lower.pop();
+  return lower.concat(upper);
+}
+
+/** Expand hull outward by padding */
+function expandHull(hull: { x: number; y: number }[], pad: number): { x: number; y: number }[] {
+  if (hull.length < 2) return hull;
+  // Compute centroid
+  let cx = 0, cy = 0;
+  for (const p of hull) { cx += p.x; cy += p.y; }
+  cx /= hull.length;
+  cy /= hull.length;
+  return hull.map((p) => {
+    const dx = p.x - cx;
+    const dy = p.y - cy;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    return { x: p.x + (dx / dist) * pad, y: p.y + (dy / dist) * pad };
+  });
+}
+
 const FINDING_TYPE_COLORS: Record<string, string> = {
   fact: "#60a5fa",       // blue-400
   implication: "#fbbf24", // amber-400
@@ -242,6 +288,35 @@ export default function ResearchGraph({
         <g
           transform={`translate(${svgRef.current ? svgRef.current.clientWidth / 2 + transform.x : 400 + transform.x}, ${svgRef.current ? svgRef.current.clientHeight / 2 + transform.y : 300 + transform.y}) scale(${transform.scale})`}
         >
+          {/* Domain cluster hulls */}
+          {Object.entries(DOMAIN_COLORS).map(([domain, color]) => {
+            const domainNodes = nodes.filter(
+              (n) => n.type === "finding" && n.domainKey === domain
+            );
+            if (domainNodes.length < 3) return null;
+            const hull = expandHull(
+              convexHull(domainNodes.map((n) => ({ x: n.x, y: n.y }))),
+              20
+            );
+            if (hull.length < 3) return null;
+            const d =
+              "M" +
+              hull.map((p) => `${p.x},${p.y}`).join("L") +
+              "Z";
+            return (
+              <path
+                key={`hull-${domain}`}
+                d={d}
+                fill={color}
+                fillOpacity={0.04}
+                stroke={color}
+                strokeOpacity={0.15}
+                strokeWidth={1}
+                strokeDasharray="4,3"
+              />
+            );
+          })}
+
           {/* Edges */}
           {edges.map((e, i) => {
             const s = nodeMap.get(e.source);

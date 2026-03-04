@@ -56,7 +56,7 @@ export interface BuildGraphResult {
 
 // --- Text similarity (character trigram Jaccard) ---
 
-function trigrams(text: string): Set<string> {
+export function trigrams(text: string): Set<string> {
   const s = new Set<string>();
   const clean = text.replace(/\s+/g, "");
   for (let i = 0; i <= clean.length - 3; i++) {
@@ -65,7 +65,7 @@ function trigrams(text: string): Set<string> {
   return s;
 }
 
-function similarity(a: string, b: string): number {
+export function similarity(a: string, b: string): number {
   const ta = trigrams(a);
   const tb = trigrams(b);
   if (ta.size === 0 || tb.size === 0) return 0;

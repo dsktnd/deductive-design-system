@@ -108,6 +108,11 @@ export default function FilterSection() {
       tags: c.tags,
     }));
 
+    // Build reference images from selected designs (original selections)
+    const originRefs = generatedDesigns
+      .map((d) => dataUrlToRef(d.imageUrl, "Selected Design"))
+      .filter((r): r is NonNullable<typeof r> => r != null);
+
     const generatedRefs: { key: string; dataUrl: string; label: string }[] = [];
 
     for (let i = 0; i < DETAIL_STAGES.length; i++) {
@@ -128,12 +133,14 @@ export default function FilterSection() {
       promptParts.push(`[THIS IMAGE] ${stage.description}`);
       const prompt = promptParts.join("\n");
 
-      const useReferences = i >= 3;
-      const referenceImages = useReferences
+      // Always include original selected designs as references;
+      // for later stages, also include previously generated detail images
+      const stageRefs = i >= 3
         ? generatedRefs
             .map((ref) => dataUrlToRef(ref.dataUrl, ref.label))
             .filter((r): r is NonNullable<typeof r> => r != null)
         : [];
+      const referenceImages = [...originRefs, ...stageRefs];
 
       try {
         const res = await fetch("/api/generate", {
