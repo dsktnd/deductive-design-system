@@ -33,10 +33,10 @@ function domainLabel(domain: string): string {
 
 function generatePlaceholderGradient(index: number): string {
   const gradients = [
-    "from-zinc-700 to-slate-800",
-    "from-slate-700 to-zinc-900",
-    "from-zinc-600 to-slate-900",
-    "from-slate-600 to-zinc-800",
+    "from-slate-600 to-slate-800",
+    "from-slate-700 to-slate-800",
+    "from-slate-500 to-slate-900",
+    "from-slate-600 to-slate-700",
   ];
   return gradients[index % gradients.length];
 }
@@ -60,7 +60,7 @@ function ConditionPanel({
 }) {
   if (conditions.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-zinc-800 p-4 text-center text-sm text-zinc-600">
+      <div className="rounded-lg border border-dashed border-slate-700 p-4 text-center text-sm text-slate-500">
         No conditions set. Go to Research to define conditions.
       </div>
     );
@@ -69,7 +69,7 @@ function ConditionPanel({
   return (
     <div className="space-y-4">
       <div>
-        <label className="mb-1 block text-xs font-medium text-zinc-400">
+        <label className="mb-1 block text-xs font-medium text-slate-400">
           Base Prompt
         </label>
         <input
@@ -77,18 +77,18 @@ function ConditionPanel({
           value={basePrompt}
           onChange={(e) => onBasePromptChange(e.target.value)}
           placeholder="e.g. residential building in Tokyo, 3 stories"
-          className="w-full rounded border border-zinc-700 bg-zinc-800/80 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none"
+          className="w-full rounded border border-slate-600 bg-slate-700/80 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 focus:outline-none"
         />
       </div>
 
       <div className="space-y-3">
         {conditions.map((c, i) => (
-          <div key={c.domain} className="rounded border border-zinc-800 bg-zinc-900/40 p-3">
+          <div key={c.domain} className="rounded border border-slate-700 bg-slate-800/40 p-3">
             <div className="mb-1 flex items-baseline justify-between">
-              <span className="text-sm font-medium text-zinc-300">
+              <span className="text-sm font-medium text-slate-300">
                 {domainLabel(c.domain)}
               </span>
-              <span className="font-mono text-xs text-zinc-500">
+              <span className="font-mono text-xs text-slate-500">
                 {Math.round(c.weight * 100)}
               </span>
             </div>
@@ -98,10 +98,10 @@ function ConditionPanel({
               max={100}
               value={Math.round(c.weight * 100)}
               onChange={(e) => onWeightChange(i, parseInt(e.target.value, 10) / 100)}
-              className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-zinc-700 accent-zinc-300"
+              className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-slate-600 accent-blue-500"
             />
             {c.notes && (
-              <p className="mt-1 truncate text-xs text-zinc-600">{c.notes}</p>
+              <p className="mt-1 truncate text-xs text-slate-500">{c.notes}</p>
             )}
           </div>
         ))}
@@ -124,12 +124,12 @@ function SpectrumView({
   onSpectrumChange: (v: number) => void;
 }) {
   return (
-    <div className="rounded-lg border border-zinc-700 bg-zinc-900/60 px-4 py-3">
-      <p className="mb-2 text-center text-xs font-medium uppercase tracking-wider text-zinc-500">
+    <div className="rounded-lg border border-slate-600 bg-slate-800/60 px-4 py-3">
+      <p className="mb-2 text-center text-xs font-medium uppercase tracking-wider text-slate-500">
         Design Space Spectrum
       </p>
       <div className="flex items-center gap-3">
-        <span className="min-w-0 flex-shrink-0 truncate text-xs font-medium text-zinc-400">
+        <span className="min-w-0 flex-shrink-0 truncate text-xs font-medium text-slate-400">
           {domainLabel(conditionA.domain)}
         </span>
         <input
@@ -138,13 +138,13 @@ function SpectrumView({
           max={100}
           value={spectrumValue}
           onChange={(e) => onSpectrumChange(parseInt(e.target.value, 10))}
-          className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-zinc-700 accent-zinc-300"
+          className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-slate-600 accent-blue-500"
         />
-        <span className="min-w-0 flex-shrink-0 truncate text-xs font-medium text-zinc-400">
+        <span className="min-w-0 flex-shrink-0 truncate text-xs font-medium text-slate-400">
           {domainLabel(conditionB.domain)}
         </span>
       </div>
-      <p className="mt-1 text-center font-mono text-[10px] text-zinc-600">
+      <p className="mt-1 text-center font-mono text-[10px] text-slate-500">
         {100 - spectrumValue}% / {spectrumValue}%
       </p>
     </div>
@@ -172,7 +172,7 @@ function ImageCard({
   added: boolean;
 }) {
   return (
-    <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/60">
+    <div className="group overflow-hidden rounded-lg border border-slate-700 bg-slate-800/60">
       <button onClick={onEnlarge} className="block w-full">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -182,14 +182,14 @@ function ImageCard({
         />
       </button>
       <div className="p-3">
-        <p className="truncate text-xs text-zinc-400">{item.prompt}</p>
-        <p className="mt-0.5 text-[10px] text-zinc-600">
+        <p className="truncate text-xs text-slate-400">{item.prompt}</p>
+        <p className="mt-0.5 text-[10px] text-slate-500">
           {item.timestamp.toLocaleTimeString()}
         </p>
         <button
           onClick={onAddToFilter}
           disabled={added}
-          className="mt-2 w-full rounded bg-zinc-700 px-2 py-1 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-600"
+          className="mt-2 w-full rounded bg-slate-600 px-2 py-1 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500"
         >
           {added ? "Added" : "Add to Filter"}
         </button>
@@ -213,23 +213,23 @@ function PlaceholderCard({
 }) {
   const gradient = generatePlaceholderGradient(index);
   return (
-    <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/60">
+    <div className="group overflow-hidden rounded-lg border border-slate-700 bg-slate-800/60">
       <button onClick={onEnlarge} className="block w-full">
         <div
           className={`flex aspect-square w-full items-center justify-center bg-gradient-to-br ${gradient}`}
         >
-          <span className="px-4 text-center text-xs text-zinc-400">
+          <span className="px-4 text-center text-xs text-slate-400">
             Placeholder #{index + 1}
           </span>
         </div>
       </button>
       <div className="p-3">
-        <p className="truncate text-xs text-zinc-400">{prompt}</p>
-        <p className="mt-0.5 text-[10px] text-zinc-600">placeholder</p>
+        <p className="truncate text-xs text-slate-400">{prompt}</p>
+        <p className="mt-0.5 text-[10px] text-slate-500">placeholder</p>
         <button
           onClick={onAddToFilter}
           disabled={added}
-          className="mt-2 w-full rounded bg-zinc-700 px-2 py-1 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-600"
+          className="mt-2 w-full rounded bg-slate-600 px-2 py-1 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500"
         >
           {added ? "Added" : "Add to Filter"}
         </button>
@@ -263,13 +263,13 @@ function Lightbox({
           /* eslint-disable-next-line @next/next/no-img-element */
           <img src={src} alt={alt} className="max-h-[85vh] rounded-lg object-contain" />
         ) : (
-          <div className="flex h-96 w-96 items-center justify-center rounded-lg bg-gradient-to-br from-zinc-700 to-slate-800">
-            <span className="text-sm text-zinc-400">{alt}</span>
+          <div className="flex h-96 w-96 items-center justify-center rounded-lg bg-gradient-to-br from-slate-600 to-slate-800">
+            <span className="text-sm text-slate-400">{alt}</span>
           </div>
         )}
         <button
           onClick={onClose}
-          className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-sm text-zinc-300 hover:bg-zinc-700"
+          className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-slate-700 text-sm text-slate-300 hover:bg-slate-600"
         >
           x
         </button>
@@ -396,29 +396,29 @@ export default function GeneratePage() {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-zinc-100">
+      <h2 className="font-[family-name:var(--font-dm-serif)] text-xl text-slate-100">
         Generate / 生成
       </h2>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-slate-500">
         Explore continuous design variations from research conditions.
       </p>
 
       {/* Generation Controls */}
-      <div className="mt-5 flex flex-wrap items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/40 px-4 py-3">
+      <div className="mt-5 flex flex-wrap items-center gap-3 rounded-lg border border-slate-700 bg-slate-800/40 px-4 py-3">
         <button
           onClick={handleGenerate}
           disabled={isLoading}
-          className="rounded-lg bg-zinc-200 px-5 py-2 text-sm font-semibold text-zinc-900 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-500"
+          className="rounded-lg gradient-accent px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:scale-105 hover:shadow-blue-600/40 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-500"
         >
           {isLoading ? "Generating..." : "Generate"}
         </button>
 
         <div className="flex items-center gap-2">
-          <label className="text-xs text-zinc-500">Style</label>
+          <label className="text-xs text-slate-500">Style</label>
           <select
             value={style}
             onChange={(e) => setStyle(e.target.value)}
-            className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-xs text-zinc-300 focus:border-zinc-500 focus:outline-none"
+            className="rounded border border-slate-600 bg-slate-700 px-2 py-1.5 text-xs text-slate-300 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 focus:outline-none"
           >
             {STYLES.map((s) => (
               <option key={s} value={s}>
@@ -429,7 +429,7 @@ export default function GeneratePage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="text-xs text-zinc-500">Variations</label>
+          <label className="text-xs text-slate-500">Variations</label>
           <div className="flex gap-1">
             {VARIATION_OPTIONS.map((n) => (
               <button
@@ -437,8 +437,8 @@ export default function GeneratePage() {
                 onClick={() => setVariations(n)}
                 className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
                   variations === n
-                    ? "bg-zinc-300 text-zinc-900"
-                    : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+                    ? "bg-slate-300 text-slate-800"
+                    : "bg-slate-700 text-slate-400 hover:bg-slate-600"
                 }`}
               >
                 {n}
@@ -468,7 +468,7 @@ export default function GeneratePage() {
       <div className="mt-5 grid grid-cols-1 gap-6 xl:grid-cols-[260px_1fr]">
         {/* Condition sidebar */}
         <aside>
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
             Conditions
           </h3>
           <ConditionPanel
@@ -481,12 +481,12 @@ export default function GeneratePage() {
 
         {/* Image gallery */}
         <div>
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
             Generated Designs
           </h3>
 
           {allImages.length === 0 && placeholders.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-zinc-800 px-6 py-16 text-center text-sm text-zinc-600">
+            <div className="rounded-lg border border-dashed border-slate-700 px-6 py-16 text-center text-sm text-slate-500">
               {activeConditions.length === 0
                 ? "Set conditions in Research first, then generate designs here."
                 : "Click Generate to create architectural design variations."}
@@ -519,14 +519,14 @@ export default function GeneratePage() {
 
       {/* Proceed button */}
       {generatedDesigns.length > 0 && (
-        <div className="mt-8 flex items-center justify-between border-t border-zinc-800 pt-6">
-          <p className="text-sm text-zinc-500">
+        <div className="mt-8 flex items-center justify-between border-t border-slate-700 pt-6">
+          <p className="text-sm text-slate-500">
             {generatedDesigns.length} design{generatedDesigns.length !== 1 ? "s" : ""} added
             to filter
           </p>
           <button
             onClick={handleProceed}
-            className="rounded-lg bg-zinc-200 px-5 py-2.5 text-sm font-semibold text-zinc-900 transition-colors hover:bg-white"
+            className="rounded-lg gradient-accent px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:scale-105 hover:shadow-blue-600/40"
           >
             Proceed to Filter
           </button>

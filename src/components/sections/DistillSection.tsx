@@ -237,22 +237,22 @@ export default function DistillSection() {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-zinc-100">
+      <h2 className="font-[family-name:var(--font-dm-serif)] text-xl text-slate-100">
         Distill / 蒸留
       </h2>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-slate-500">
         リサーチ条件に照らして最終案を自動評価し、改善を繰り返します。
       </p>
 
       {!hasImages ? (
-        <div className="mt-8 rounded-lg border border-dashed border-zinc-800 px-6 py-12 text-center text-sm text-zinc-600">
+        <div className="mt-8 rounded-lg border border-dashed border-slate-700 px-6 py-12 text-center text-sm text-slate-500">
           Filterでディテール画像を生成してください。生成された画像がここに表示されます。
         </div>
       ) : (
         <>
           {/* Detail Image Thumbnails with per-image regeneration */}
           <section className="mt-6">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
               Detail Images / ディテール画像
             </h3>
             <div className="grid grid-cols-5 gap-3">
@@ -263,9 +263,9 @@ export default function DistillSection() {
                 return (
                   <div
                     key={key}
-                    className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/50"
+                    className="overflow-hidden rounded-lg border border-slate-700 bg-slate-800/50"
                   >
-                    <div className="relative aspect-square bg-zinc-900">
+                    <div className="relative aspect-square bg-slate-800">
                       {img ? (
                         <>
                           <button
@@ -282,23 +282,23 @@ export default function DistillSection() {
                           {isRegenerating && (
                             <div className="absolute inset-0 flex items-center justify-center bg-black/60">
                               <div className="text-center">
-                                <div className="mx-auto h-5 w-5 animate-spin rounded-full border-2 border-zinc-600 border-t-zinc-300" />
-                                <span className="mt-1 block text-[10px] text-zinc-400">再生成中</span>
+                                <div className="mx-auto h-5 w-5 animate-spin rounded-full border-2 border-slate-500 border-t-slate-300" />
+                                <span className="mt-1 block text-[10px] text-slate-400">再生成中</span>
                               </div>
                             </div>
                           )}
                         </>
                       ) : (
                         <div className="flex h-full items-center justify-center">
-                          <span className="text-[10px] text-zinc-700">-</span>
+                          <span className="text-[10px] text-slate-600">-</span>
                         </div>
                       )}
                     </div>
                     <div className="px-2 py-1.5 text-center">
-                      <div className="text-[10px] font-semibold text-zinc-300">
+                      <div className="text-[10px] font-semibold text-slate-300">
                         {labels.labelJa}
                       </div>
-                      <div className="text-[9px] text-zinc-600">
+                      <div className="text-[9px] text-slate-500">
                         {labels.label}
                       </div>
                     </div>
@@ -311,14 +311,14 @@ export default function DistillSection() {
           {/* Refined Concept Display */}
           {refinedConcept && (
             <section className="mt-6">
-              <div className="rounded-lg border border-zinc-700 bg-zinc-900/60 p-4">
-                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              <div className="rounded-lg border border-slate-600 bg-slate-800/60 p-4">
+                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                   Refined Concept
                 </div>
-                <h4 className="text-sm font-semibold text-zinc-100">
+                <h4 className="text-sm font-semibold text-slate-100">
                   {refinedConcept.title}
                 </h4>
-                <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+                <p className="mt-1 text-xs leading-relaxed text-slate-400">
                   {refinedConcept.description}
                 </p>
               </div>
@@ -333,7 +333,7 @@ export default function DistillSection() {
                 disabled={
                   isEvaluating || !refinedConcept || conditions.length === 0
                 }
-                className="rounded-lg bg-zinc-200 px-6 py-2.5 text-sm font-semibold text-zinc-900 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-500"
+                className="rounded-lg gradient-accent px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:scale-105 hover:shadow-blue-600/40 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-500"
               >
                 {isEvaluating
                   ? "評価中..."
@@ -341,7 +341,7 @@ export default function DistillSection() {
                   ? "再評価"
                   : "評価を実行"}
               </button>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-slate-500">
                 {imageCount} images / {conditions.length} conditions
               </span>
               {hasLowScores && !isEvaluating && (
@@ -354,12 +354,12 @@ export default function DistillSection() {
               <p className="mt-3 text-xs text-red-400">{evalError}</p>
             )}
             {!refinedConcept && (
-              <p className="mt-2 text-xs text-zinc-600">
+              <p className="mt-2 text-xs text-slate-500">
                 Filterで精緻化コンセプトを生成してください。
               </p>
             )}
             {conditions.length === 0 && (
-              <p className="mt-2 text-xs text-zinc-600">
+              <p className="mt-2 text-xs text-slate-500">
                 Researchでリサーチ条件を設定してください。
               </p>
             )}
@@ -368,12 +368,12 @@ export default function DistillSection() {
           {/* Loading State */}
           {isEvaluating && (
             <section className="mt-6">
-              <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-8 text-center">
-                <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-zinc-600 border-t-zinc-300" />
-                <p className="mt-3 text-sm text-zinc-400">
+              <div className="rounded-lg border border-slate-700 bg-slate-800/40 p-8 text-center">
+                <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-500 border-t-slate-300" />
+                <p className="mt-3 text-sm text-slate-400">
                   6つのドメインに対して評価を実行中...
                 </p>
-                <p className="mt-1 text-xs text-zinc-600">
+                <p className="mt-1 text-xs text-slate-500">
                   AIがリサーチ条件との整合性を分析しています
                 </p>
               </div>
@@ -383,7 +383,7 @@ export default function DistillSection() {
           {/* Evaluation Results */}
           {displayResult && !isEvaluating && (
             <section className="mt-6">
-              <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Evaluation Results / 評価結果
               </h3>
 
@@ -415,7 +415,7 @@ export default function DistillSection() {
           {/* Evaluation History */}
           {evaluationResults.length > 1 && (
             <section className="mt-6">
-              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Evaluation History / 評価履歴
               </h3>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
@@ -457,7 +457,7 @@ export default function DistillSection() {
             />
             <button
               onClick={() => setLightboxSrc(null)}
-              className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-sm text-zinc-300 hover:bg-zinc-700"
+              className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-slate-700 text-sm text-slate-300 hover:bg-slate-600"
             >
               x
             </button>

@@ -433,15 +433,15 @@ export default function ResearchSection() {
         />
       )}
 
-      <h2 className="text-lg font-semibold text-zinc-100">
+      <h2 className="font-[family-name:var(--font-dm-serif)] text-xl text-slate-100">
         Research / リサーチ
       </h2>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-slate-500">
         テーマを入力すると、AIが6つの領域から多角的にリサーチを行います。
       </p>
 
-      <div className="mt-5 rounded-lg border border-zinc-700 bg-zinc-900/80 p-5">
-        <label className="mb-2 block text-sm font-medium text-zinc-300">
+      <div className="mt-5 rounded-lg border border-slate-600 bg-slate-800/80 p-5">
+        <label className="mb-2 block text-sm font-medium text-slate-300">
           Theme
         </label>
         <div className="flex gap-3">
@@ -456,19 +456,19 @@ export default function ResearchSection() {
               }
             }}
             placeholder="e.g. 東京都心の木造3階建て住宅、環境配慮型オフィスビル..."
-            className="flex-1 rounded border border-zinc-600 bg-zinc-800 px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-400 focus:outline-none"
+            className="flex-1 rounded border border-slate-500 bg-slate-700 px-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 focus:outline-none"
           />
           <button
             onClick={handleResearch}
             disabled={isResearching || !theme.trim()}
-            className="rounded-lg bg-zinc-200 px-6 py-2.5 text-sm font-semibold text-zinc-900 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-500"
+            className="rounded-lg gradient-accent px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:scale-105 hover:shadow-blue-600/40 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-500"
           >
             {isResearching ? "Researching..." : "Research"}
           </button>
         </div>
         {isResearching && (
-          <div className="mt-3 flex items-center gap-3 text-sm text-zinc-400">
-            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-zinc-200" />
+          <div className="mt-3 flex items-center gap-3 text-sm text-slate-400">
+            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-500/30 border-t-blue-400" />
             <span>{completedDomains}/{DOMAINS.length} 領域を分析中...</span>
             <div className="flex gap-1">
               {DOMAINS.map((d) => (
@@ -476,10 +476,10 @@ export default function ResearchSection() {
                   key={d.key}
                   className={`h-2 w-6 rounded-full transition-colors duration-300 ${
                     researchingDomains.has(d.key)
-                      ? "animate-pulse bg-zinc-500"
+                      ? "animate-pulse bg-slate-500"
                       : completedDomains > 0 && !researchingDomains.has(d.key)
                       ? "bg-emerald-500"
-                      : "bg-zinc-700"
+                      : "bg-slate-600"
                   }`}
                   title={d.ja}
                 />
@@ -493,33 +493,33 @@ export default function ResearchSection() {
       </div>
 
       {/* View Mode Toggle */}
-      <div className="mt-6 flex items-center gap-1 rounded-lg border border-zinc-800 bg-zinc-900/60 p-1 w-fit">
+      <div className="mt-6 flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800/60 p-1 w-fit">
         <button
           onClick={() => setViewMode("cards")}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
             viewMode === "cards"
-              ? "bg-zinc-700 text-zinc-100"
-              : "text-zinc-500 hover:text-zinc-300"
+              ? "gradient-accent-subtle text-blue-300 border border-blue-500/30"
+              : "text-slate-500 hover:text-slate-300 hover:bg-slate-700/50"
           }`}
         >
           Cards
         </button>
         <button
           onClick={() => setViewMode("graph")}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
             viewMode === "graph"
-              ? "bg-zinc-700 text-zinc-100"
-              : "text-zinc-500 hover:text-zinc-300"
+              ? "gradient-accent-subtle text-blue-300 border border-blue-500/30"
+              : "text-slate-500 hover:text-slate-300 hover:bg-slate-700/50"
           }`}
         >
           Graph
         </button>
         <button
           onClick={() => setViewMode("matrix")}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
             viewMode === "matrix"
-              ? "bg-zinc-700 text-zinc-100"
-              : "text-zinc-500 hover:text-zinc-300"
+              ? "gradient-accent-subtle text-blue-300 border border-blue-500/30"
+              : "text-slate-500 hover:text-slate-300 hover:bg-slate-700/50"
           }`}
         >
           Matrix
@@ -543,7 +543,7 @@ export default function ResearchSection() {
           </div>
 
           <aside className="xl:sticky xl:top-20 xl:self-start">
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500">
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">
               Condition Summary
             </h3>
             <SummaryPanel domains={DOMAINS} state={domainState} />
@@ -555,8 +555,8 @@ export default function ResearchSection() {
         <div className="mt-4">
           <Suspense
             fallback={
-              <div className="flex h-[600px] items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900">
-                <span className="text-sm text-zinc-500">グラフを読み込み中...</span>
+              <div className="flex h-[600px] items-center justify-center rounded-lg border border-slate-700 bg-slate-800">
+                <span className="text-sm text-slate-500">グラフを読み込み中...</span>
               </div>
             }
           >
@@ -576,23 +576,23 @@ export default function ResearchSection() {
 
       {/* Concept Proposal Section */}
       {activeCount > 0 && (
-        <div className="mt-6 rounded-lg border border-zinc-800 bg-zinc-900/40 p-5">
+        <div className="mt-6 rounded-lg border border-slate-700 bg-slate-800/40 p-5">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-semibold text-zinc-200">
+              <h3 className="text-sm font-semibold text-slate-200">
                 Architectural Concepts / コンセプト方向性
               </h3>
-              <p className="mt-0.5 text-xs text-zinc-500">
+              <p className="mt-0.5 text-xs text-slate-500">
                 リサーチ結果と各領域の比重から、2つの対照的な建築コンセプトを提案します。
               </p>
             </div>
             <button
               onClick={handleProposeConcepts}
               disabled={isProposingConcepts || !theme.trim()}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500 ${
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 ${
                 weightsChangedSinceConcept
-                  ? "bg-zinc-200 text-zinc-900 hover:bg-white"
-                  : "bg-zinc-700 text-zinc-200 hover:bg-zinc-600"
+                  ? "gradient-accent text-white hover:scale-105"
+                  : "bg-slate-600 text-slate-200 hover:bg-slate-500"
               }`}
             >
               {isProposingConcepts ? "Proposing..." : concepts.length >= 2 ? "コンセプトを再提案" : "コンセプトを提案"}
@@ -605,13 +605,13 @@ export default function ResearchSection() {
             </div>
           )}
 
-          <p className="mt-3 text-xs leading-relaxed text-zinc-400">
+          <p className="mt-3 text-xs leading-relaxed text-slate-400">
             AIがリサーチで得られた6領域の知見と比重を分析し、対比・緊張関係にある2つの建築コンセプト方向性を提案します。比重を変更した後に再提案すると、新しい比重に基づいたコンセプトが生成されます。タイトルと説明は編集可能です。
           </p>
 
           {isProposingConcepts && (
-            <div className="mt-3 flex items-center gap-2 text-sm text-zinc-400">
-              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-zinc-200" />
+            <div className="mt-3 flex items-center gap-2 text-sm text-slate-400">
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-500/30 border-t-blue-400" />
               コンセプト方向性を分析中...
             </div>
           )}
@@ -643,17 +643,17 @@ export default function ResearchSection() {
             <div className="mt-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-semibold text-zinc-200">
+                  <h4 className="text-sm font-semibold text-slate-200">
                     Architecture Config / 建築的翻訳
                   </h4>
-                  <p className="mt-0.5 text-xs text-zinc-500">
+                  <p className="mt-0.5 text-xs text-slate-500">
                     コンセプトを12軸の建築パラメータに翻訳し、生成の精度を高めます。
                   </p>
                 </div>
                 <button
                   onClick={handleTranslateToConfig}
                   disabled={isTranslating}
-                  className="rounded-lg bg-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
+                  className="rounded-lg bg-slate-600 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500"
                 >
                   {isTranslating
                     ? "翻訳中..."
@@ -664,8 +664,8 @@ export default function ResearchSection() {
               </div>
 
               {isTranslating && (
-                <div className="mt-3 flex items-center gap-2 text-sm text-zinc-400">
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-zinc-200" />
+                <div className="mt-3 flex items-center gap-2 text-sm text-slate-400">
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-500/30 border-t-blue-400" />
                   2つのコンセプトを建築パラメータに翻訳中...
                 </div>
               )}
@@ -693,7 +693,7 @@ export default function ResearchSection() {
           {concepts.length >= 2 && (
             <button
               onClick={handleProceed}
-              className="mt-5 w-full rounded-lg bg-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-900 transition-colors hover:bg-white"
+              className="mt-5 w-full rounded-lg gradient-accent px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:scale-105 hover:shadow-blue-600/40"
             >
               Proceed to Generate
             </button>

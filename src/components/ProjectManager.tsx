@@ -80,23 +80,23 @@ export default function ProjectManager({ onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="mx-4 w-full max-w-2xl rounded-xl border border-zinc-800 bg-zinc-950 shadow-2xl">
+      <div className="mx-4 w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-900 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-slate-700 px-6 py-4">
           <div>
-            <h2 className="text-base font-semibold text-zinc-100">Projects</h2>
-            <p className="text-xs text-zinc-500">Manage your design projects</p>
+            <h2 className="text-base font-semibold text-slate-100">Projects</h2>
+            <p className="text-xs text-slate-500">Manage your design projects</p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handleImport}
-              className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-800"
+              className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs text-slate-300 transition-colors hover:bg-slate-700"
             >
               Import
             </button>
             <button
               onClick={onClose}
-              className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+              className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-700 hover:text-slate-300"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -120,14 +120,14 @@ export default function ProjectManager({ onClose }: Props) {
               key={p.id}
               className={`group flex items-center gap-3 rounded-lg px-4 py-3 transition-colors ${
                 p.id === currentProjectId
-                  ? "bg-zinc-800/60"
-                  : "hover:bg-zinc-900"
+                  ? "bg-slate-700/60"
+                  : "hover:bg-slate-800"
               }`}
             >
               {/* Active indicator */}
               <div className="flex w-2 justify-center">
                 {p.id === currentProjectId && (
-                  <span className="h-2 w-2 rounded-full bg-zinc-100" />
+                  <span className="h-2 w-2 rounded-full bg-slate-100" />
                 )}
               </div>
 
@@ -143,7 +143,7 @@ export default function ProjectManager({ onClose }: Props) {
                       if (e.key === "Escape") setEditingId(null);
                     }}
                     onBlur={commitRename}
-                    className="w-full rounded bg-zinc-800 px-2 py-0.5 text-sm text-zinc-200 outline-none ring-1 ring-zinc-600"
+                    className="w-full rounded bg-slate-700 px-2 py-0.5 text-sm text-slate-200 outline-none ring-1 ring-slate-500"
                   />
                 ) : (
                   <button
@@ -152,8 +152,8 @@ export default function ProjectManager({ onClose }: Props) {
                     }}
                     className="block w-full text-left"
                   >
-                    <span className="text-sm font-medium text-zinc-200 truncate block">{p.name}</span>
-                    <span className="text-[10px] text-zinc-500">
+                    <span className="text-sm font-medium text-slate-200 truncate block">{p.name}</span>
+                    <span className="text-[10px] text-slate-500">
                       {p.theme && <>{p.theme} &middot; </>}
                       created {formatDate(p.createdAt)} &middot; updated {formatDate(p.updatedAt)}
                     </span>
@@ -165,7 +165,7 @@ export default function ProjectManager({ onClose }: Props) {
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => startRename(p)}
-                  className="rounded p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+                  className="rounded p-1 text-slate-500 hover:bg-slate-600 hover:text-slate-300"
                   title="Rename"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -175,7 +175,7 @@ export default function ProjectManager({ onClose }: Props) {
                 </button>
                 <button
                   onClick={() => duplicateProject(p.id)}
-                  className="rounded p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+                  className="rounded p-1 text-slate-500 hover:bg-slate-600 hover:text-slate-300"
                   title="Duplicate"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -185,7 +185,7 @@ export default function ProjectManager({ onClose }: Props) {
                 </button>
                 <button
                   onClick={() => handleExport(p.id)}
-                  className="rounded p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+                  className="rounded p-1 text-slate-500 hover:bg-slate-600 hover:text-slate-300"
                   title="Export"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -209,7 +209,7 @@ export default function ProjectManager({ onClose }: Props) {
                   ) : (
                     <button
                       onClick={() => setConfirmDeleteId(p.id)}
-                      className="rounded p-1 text-zinc-500 hover:bg-red-900/30 hover:text-red-400"
+                      className="rounded p-1 text-slate-500 hover:bg-red-900/30 hover:text-red-400"
                       title="Delete"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

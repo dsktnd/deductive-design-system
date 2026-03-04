@@ -14,12 +14,12 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 flex h-screen w-56 flex-col border-r border-zinc-800 bg-zinc-950">
-      <div className="border-b border-zinc-800 px-5 py-5">
-        <h1 className="text-sm font-semibold tracking-widest text-zinc-100 uppercase">
+    <aside className="fixed left-0 top-0 flex h-screen w-56 flex-col border-r border-slate-700 bg-slate-900">
+      <div className="border-b border-slate-700 px-5 py-5">
+        <h1 className="text-sm font-semibold tracking-widest text-slate-100 uppercase">
           Deductive Design
         </h1>
-        <p className="mt-0.5 text-xs tracking-wider text-zinc-500">
+        <p className="mt-0.5 text-xs tracking-wider text-slate-500">
           演繹的デザイン
         </p>
       </div>
@@ -33,15 +33,15 @@ export default function Sidebar() {
               href={item.href}
               className={`group flex items-center gap-3 rounded px-3 py-2.5 text-sm transition-colors ${
                 isActive
-                  ? "bg-zinc-800 text-zinc-100"
-                  : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
+                  ? "bg-slate-700 text-slate-100"
+                  : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
               }`}
             >
               <span
                 className={`flex h-6 w-6 items-center justify-center rounded text-xs font-bold ${
                   isActive
-                    ? "bg-zinc-100 text-zinc-900"
-                    : "bg-zinc-800 text-zinc-400 group-hover:bg-zinc-700 group-hover:text-zinc-200"
+                    ? "bg-slate-100 text-slate-800"
+                    : "bg-slate-700 text-slate-400 group-hover:bg-slate-600 group-hover:text-slate-200"
                 }`}
               >
                 {item.icon}
@@ -52,7 +52,7 @@ export default function Sidebar() {
                 </span>
                 <span
                   className={`text-[10px] leading-tight ${
-                    isActive ? "text-zinc-400" : "text-zinc-600"
+                    isActive ? "text-slate-400" : "text-slate-500"
                   }`}
                 >
                   {item.labelJa}
@@ -63,18 +63,18 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="border-t border-zinc-800 px-5 py-4">
-        <p className="text-[10px] tracking-wider text-zinc-600">PROCESS</p>
-        <div className="mt-2 flex items-center gap-1 text-xs text-zinc-500">
-          <span className="text-zinc-300">R</span>
+      <div className="border-t border-slate-700 px-5 py-4">
+        <p className="text-[10px] tracking-wider text-slate-500">PROCESS</p>
+        <div className="mt-2 flex items-center gap-1 text-xs text-slate-500">
+          <span className="text-slate-300">R</span>
           <span>--&gt;</span>
-          <span className="text-zinc-300">G</span>
+          <span className="text-slate-300">G</span>
           <span>--&gt;</span>
-          <span className="text-zinc-300">F</span>
-          <span className="mx-1 text-zinc-700">|</span>
-          <span className="text-zinc-300">D</span>
+          <span className="text-slate-300">F</span>
+          <span className="mx-1 text-slate-600">|</span>
+          <span className="text-slate-300">D</span>
         </div>
-        <div className="mt-1 flex items-center text-[10px] text-zinc-600">
+        <div className="mt-1 flex items-center text-[10px] text-slate-500">
           <span>spiral</span>
           <span className="mx-1">:</span>
           <span>R &lt;-&gt; G &lt;-&gt; F</span>

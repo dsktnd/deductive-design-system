@@ -105,12 +105,12 @@ function DesignCard({
     <div
       className={`rounded border p-3 transition-colors cursor-pointer ${
         selected
-          ? "border-zinc-400 bg-zinc-800/60"
-          : "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700"
+          ? "border-slate-400 bg-slate-700/60"
+          : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
       }`}
       onClick={() => onSelect(design.id)}
     >
-      <div className="mb-2 aspect-square w-full overflow-hidden rounded bg-zinc-800">
+      <div className="mb-2 aspect-square w-full overflow-hidden rounded bg-slate-700">
         {design.imageUrl ? (
           <img
             src={design.imageUrl}
@@ -118,13 +118,13 @@ function DesignCard({
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-xs text-zinc-600">
+          <div className="flex h-full items-center justify-center text-xs text-slate-500">
             No image
           </div>
         )}
       </div>
       <div className="flex items-start justify-between gap-2">
-        <p className="flex-1 text-xs leading-relaxed text-zinc-400 line-clamp-2">
+        <p className="flex-1 text-xs leading-relaxed text-slate-400 line-clamp-2">
           {design.prompt}
         </p>
         <RadarChart scores={design.scores} size={80} />
@@ -177,34 +177,34 @@ export default function FilterPage() {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-zinc-100">
+      <h2 className="font-[family-name:var(--font-dm-serif)] text-xl text-slate-100">
         Filter / フィルタリング
       </h2>
-      <p className="mt-2 text-sm text-zinc-500">
+      <p className="mt-2 text-sm text-slate-500">
         Progressively narrow the design space using research-based criteria.
       </p>
 
       {generatedDesigns.length === 0 ? (
-        <div className="mt-8 rounded border border-dashed border-zinc-800 px-6 py-12 text-center text-sm text-zinc-600">
+        <div className="mt-8 rounded border border-dashed border-slate-700 px-6 py-12 text-center text-sm text-slate-500">
           No generated designs yet. Generate designs first, then return here to
           filter.
         </div>
       ) : (
         <div className="mt-6 grid grid-cols-[280px_1fr] gap-6">
           <div className="space-y-4">
-            <div className="rounded border border-zinc-800 bg-zinc-900/50 p-4">
-              <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-zinc-400">
+            <div className="rounded border border-slate-700 bg-slate-800/50 p-4">
+              <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-slate-400">
                 Threshold Filters
               </h3>
               <div className="space-y-3">
                 {EVAL_AXES.map((axis) => (
                   <div key={axis.key}>
                     <div className="mb-1 flex items-center justify-between">
-                      <label className="text-xs text-zinc-400">
+                      <label className="text-xs text-slate-400">
                         {axis.labelEn}{" "}
-                        <span className="text-zinc-600">{axis.labelJa}</span>
+                        <span className="text-slate-500">{axis.labelJa}</span>
                       </label>
-                      <span className="text-xs tabular-nums text-zinc-500">
+                      <span className="text-xs tabular-nums text-slate-500">
                         {thresholds[axis.key]}
                       </span>
                     </div>
@@ -219,25 +219,25 @@ export default function FilterPage() {
                           parseInt(e.target.value)
                         )
                       }
-                      className="w-full accent-zinc-400"
+                      className="w-full accent-slate-400"
                     />
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="rounded border border-zinc-800 bg-zinc-900/50 p-4">
+            <div className="rounded border border-slate-700 bg-slate-800/50 p-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-zinc-400">
+                <span className="text-xs text-slate-400">
                   Showing {filteredDesigns.length} / {generatedDesigns.length}
                 </span>
-                <span className="text-xs text-zinc-600">
+                <span className="text-xs text-slate-500">
                   {selectedIds.size} selected
                 </span>
               </div>
               <button
                 onClick={handleSendToDistill}
-                className="mt-3 w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-200 transition-colors hover:border-zinc-600 hover:bg-zinc-700"
+                className="mt-3 w-full rounded border border-slate-600 bg-slate-700 px-3 py-2 text-xs text-slate-200 transition-colors hover:border-slate-500 hover:bg-slate-600"
               >
                 Send to Distill
               </button>

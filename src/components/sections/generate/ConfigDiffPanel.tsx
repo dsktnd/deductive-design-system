@@ -82,8 +82,8 @@ function ConfigDiffPanel({
   }, [blendResults]);
 
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 px-4 py-3">
-      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+    <div className="rounded-lg border border-slate-700 bg-slate-800/40 px-4 py-3">
+      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
         Design Space の変化軸
       </div>
       <div className="space-y-2">
@@ -91,15 +91,15 @@ function ConfigDiffPanel({
           const axisBlend = blendLookup.get(d.labelJa);
           return (
             <div key={d.labelJa} className="flex items-center gap-2 text-[11px]">
-              <span className="w-16 shrink-0 text-right text-zinc-500">
+              <span className="w-16 shrink-0 text-right text-slate-500">
                 {d.labelJa}
               </span>
-              <span className="w-20 shrink-0 truncate text-right font-medium text-zinc-400">
+              <span className="w-20 shrink-0 truncate text-right font-medium text-slate-400">
                 {d.valueA}
               </span>
-              <div className="relative h-2 flex-1 rounded-full bg-zinc-800">
+              <div className="relative h-2 flex-1 rounded-full bg-slate-700">
                 {/* gradient track */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-zinc-600 to-zinc-400 opacity-40" />
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-slate-500 to-slate-400 opacity-40" />
                 {/* spectrum step dots */}
                 {ratios.map((ratio) => {
                   const blended = axisBlend?.get(ratio);
@@ -111,11 +111,11 @@ function ConfigDiffPanel({
                     >
                       <div className={`h-3 w-3 rounded-full border shadow-sm ${
                         blended
-                          ? "border-zinc-400 bg-zinc-200"
-                          : "border-zinc-500 bg-zinc-300"
+                          ? "border-slate-400 bg-slate-200"
+                          : "border-slate-500 bg-slate-300"
                       }`} />
                       <span className={`absolute left-1/2 top-full mt-0.5 -translate-x-1/2 whitespace-nowrap text-[8px] ${
-                        blended ? "font-medium text-zinc-300" : "font-mono text-zinc-500"
+                        blended ? "font-medium text-slate-300" : "font-mono text-slate-500"
                       }`}>
                         {ratio === 0
                           ? d.valueA
@@ -127,7 +127,7 @@ function ConfigDiffPanel({
                   );
                 })}
               </div>
-              <span className="w-20 shrink-0 truncate font-medium text-zinc-400">
+              <span className="w-20 shrink-0 truncate font-medium text-slate-400">
                 {d.valueB}
               </span>
             </div>
@@ -137,21 +137,21 @@ function ConfigDiffPanel({
 
       {/* Summary keywords per ratio */}
       {blendResults.length > 0 && (
-        <div className="mt-4 border-t border-zinc-800 pt-3">
-          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+        <div className="mt-4 border-t border-slate-700 pt-3">
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
             ブレンドキーワード（各ステップ）
           </div>
           <div className="space-y-2">
             {blendResults.map((br) => (
               <div key={br.ratio} className="flex items-start gap-2">
-                <span className="mt-0.5 w-12 shrink-0 text-right font-mono text-[10px] text-zinc-500">
+                <span className="mt-0.5 w-12 shrink-0 text-right font-mono text-[10px] text-slate-500">
                   {100 - br.ratio}/{br.ratio}
                 </span>
                 <div className="flex flex-wrap gap-1">
                   {br.summary.map((s, i) => (
                     <span
                       key={i}
-                      className="rounded-full bg-zinc-200/10 px-2 py-0.5 text-[10px] font-medium text-zinc-300"
+                      className="rounded-full bg-slate-200/10 px-2 py-0.5 text-[10px] font-medium text-slate-300"
                     >
                       {s}
                     </span>
@@ -164,7 +164,7 @@ function ConfigDiffPanel({
       )}
 
       {ratios.length > 2 && blendResults.length === 0 && (
-        <p className="mt-3 text-[10px] text-zinc-600">
+        <p className="mt-3 text-[10px] text-slate-500">
           各ドットはスペクトラム上の生成ポイント。左端＝A、右端＝B、中間はブレンド比率。
         </p>
       )}

@@ -21,14 +21,14 @@ export const DOMAIN_LABELS: Record<string, { en: string; ja: string }> = {
 
 export function scoreColor(score: number): string {
   if (score >= 80) return "bg-emerald-500";
-  if (score >= 60) return "bg-zinc-400";
+  if (score >= 60) return "bg-slate-400";
   if (score >= 40) return "bg-amber-500";
   return "bg-red-400";
 }
 
 export function scoreTextColor(score: number): string {
   if (score >= 80) return "text-emerald-400";
-  if (score >= 60) return "text-zinc-300";
+  if (score >= 60) return "text-slate-300";
   if (score >= 40) return "text-amber-400";
   return "text-red-400";
 }

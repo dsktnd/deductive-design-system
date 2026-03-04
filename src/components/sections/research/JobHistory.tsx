@@ -11,7 +11,7 @@ function JobHistory({
 
   return (
     <div className="mt-4">
-      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
         Research History
       </h4>
       <div className="space-y-1.5 max-h-60 overflow-y-auto">
@@ -19,10 +19,10 @@ function JobHistory({
           <button
             key={job.id}
             onClick={() => onLoad(job.id)}
-            className="w-full rounded border border-zinc-800 bg-zinc-900/40 px-3 py-2 text-left transition-colors hover:border-zinc-600 hover:bg-zinc-800/60"
+            className="w-full rounded border border-slate-700 bg-slate-800/40 px-3 py-2 text-left transition-colors hover:border-slate-500 hover:bg-slate-700/60"
           >
-            <div className="truncate text-sm text-zinc-300">{job.theme}</div>
-            <div className="mt-0.5 text-[10px] text-zinc-600">
+            <div className="truncate text-sm text-slate-300">{job.theme}</div>
+            <div className="mt-0.5 text-[10px] text-slate-500">
               {new Date(job.timestamp).toLocaleString()} -- {job.conditions.length} domains
             </div>
           </button>

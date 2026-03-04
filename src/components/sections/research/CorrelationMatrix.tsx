@@ -40,7 +40,7 @@ function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
 
-/** Interpolate from zinc-800 (#27272a) → emerald-900/40 → emerald-500 (#10b981) */
+/** Interpolate from slate-700 (#27272a) → emerald-900/40 → emerald-500 (#10b981) */
 function scoreToColor(score: number): string {
   const s = Math.max(0, Math.min(1, score));
   if (s < 0.3) {
@@ -158,8 +158,8 @@ export default function CorrelationMatrix({ domainState }: CorrelationMatrixProp
 
   if (!hasData(domainState)) {
     return (
-      <div className="flex h-[400px] items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900">
-        <span className="text-sm text-zinc-500">
+      <div className="flex h-[400px] items-center justify-center rounded-lg border border-slate-700 bg-slate-800">
+        <span className="text-sm text-slate-500">
           リサーチを実行すると相関マトリクスが表示されます
         </span>
       </div>
@@ -179,7 +179,7 @@ export default function CorrelationMatrix({ domainState }: CorrelationMatrixProp
       : null;
 
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-5">
+    <div className="rounded-lg border border-slate-700 bg-slate-800 p-5">
       <div className="flex flex-col items-center gap-4 lg:flex-row lg:items-start lg:gap-6">
         {/* Matrix SVG */}
         <svg
@@ -195,7 +195,7 @@ export default function CorrelationMatrix({ domainState }: CorrelationMatrixProp
               x={labelWidth + col * cellSize + cellSize / 2}
               y={labelHeight - 8}
               textAnchor="middle"
-              className="fill-zinc-400 text-[10px]"
+              className="fill-slate-400 text-[10px]"
             >
               {DOMAIN_LABELS[key] ?? key}
             </text>
@@ -208,7 +208,7 @@ export default function CorrelationMatrix({ domainState }: CorrelationMatrixProp
               x={labelWidth - 8}
               y={labelHeight + row * cellSize + cellSize / 2 + 4}
               textAnchor="end"
-              className="fill-zinc-400 text-[10px]"
+              className="fill-slate-400 text-[10px]"
             >
               {DOMAIN_LABELS[key] ?? key}
             </text>
@@ -258,7 +258,7 @@ export default function CorrelationMatrix({ domainState }: CorrelationMatrixProp
                       x={x + cellSize / 2}
                       y={y + cellSize / 2 + 4}
                       textAnchor="middle"
-                      className="fill-zinc-400 text-[11px] font-medium"
+                      className="fill-slate-400 text-[11px] font-medium"
                     >
                       {domainState[DOMAIN_KEYS[row]].weight}
                     </text>
@@ -283,9 +283,9 @@ export default function CorrelationMatrix({ domainState }: CorrelationMatrixProp
 
         {/* Detail tooltip panel */}
         {selectedDetail && (
-          <div className="min-w-[240px] max-w-[320px] rounded-lg border border-zinc-700 bg-zinc-800 p-4 text-xs">
+          <div className="min-w-[240px] max-w-[320px] rounded-lg border border-slate-600 bg-slate-700 p-4 text-xs">
             <div className="mb-2 flex items-center justify-between">
-              <span className="font-semibold text-zinc-200">
+              <span className="font-semibold text-slate-200">
                 {DOMAIN_LABELS[DOMAIN_KEYS[selectedDetail.row]]} ×{" "}
                 {DOMAIN_LABELS[DOMAIN_KEYS[selectedDetail.col]]}
               </span>
@@ -295,10 +295,10 @@ export default function CorrelationMatrix({ domainState }: CorrelationMatrixProp
             </div>
 
             {/* Score breakdown */}
-            <div className="space-y-1.5 text-zinc-400">
+            <div className="space-y-1.5 text-slate-400">
               <div className="flex justify-between">
                 <span>Related Domains (40%)</span>
-                <span className="font-mono text-zinc-300">
+                <span className="font-mono text-slate-300">
                   {selectedDetail.relatedScore.toFixed(2)}
                   {selectedDetail.mutualRelated && (
                     <span className="ml-1 text-emerald-400">↔</span>
@@ -307,13 +307,13 @@ export default function CorrelationMatrix({ domainState }: CorrelationMatrixProp
               </div>
               <div className="flex justify-between">
                 <span>タグ重複 Jaccard (30%)</span>
-                <span className="font-mono text-zinc-300">
+                <span className="font-mono text-slate-300">
                   {selectedDetail.tagScore.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>テキスト類似度 (30%)</span>
-                <span className="font-mono text-zinc-300">
+                <span className="font-mono text-slate-300">
                   {selectedDetail.textScore.toFixed(2)}
                 </span>
               </div>
@@ -322,12 +322,12 @@ export default function CorrelationMatrix({ domainState }: CorrelationMatrixProp
             {/* Common tags */}
             {selectedDetail.commonTags.length > 0 && (
               <div className="mt-3">
-                <span className="text-zinc-500">共通タグ:</span>
+                <span className="text-slate-500">共通タグ:</span>
                 <div className="mt-1 flex flex-wrap gap-1">
                   {selectedDetail.commonTags.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded bg-zinc-700 px-1.5 py-0.5 text-zinc-300"
+                      className="rounded bg-slate-600 px-1.5 py-0.5 text-slate-300"
                     >
                       {tag}
                     </span>
@@ -340,23 +340,23 @@ export default function CorrelationMatrix({ domainState }: CorrelationMatrixProp
             {selectedDetail.topFindings.length > 0 &&
               selectedDetail.topFindings[0].sim > 0 && (
                 <div className="mt-3">
-                  <span className="text-zinc-500">類似 Findings (上位3件):</span>
+                  <span className="text-slate-500">類似 Findings (上位3件):</span>
                   <div className="mt-1 space-y-2">
                     {selectedDetail.topFindings.map((pair, idx) => (
                       <div
                         key={idx}
-                        className="rounded border border-zinc-700 bg-zinc-900/60 p-2"
+                        className="rounded border border-slate-600 bg-slate-800/60 p-2"
                       >
-                        <div className="flex justify-between text-zinc-500">
+                        <div className="flex justify-between text-slate-500">
                           <span>sim</span>
-                          <span className="font-mono text-zinc-400">
+                          <span className="font-mono text-slate-400">
                             {pair.sim.toFixed(3)}
                           </span>
                         </div>
-                        <p className="mt-1 line-clamp-2 text-zinc-300">
+                        <p className="mt-1 line-clamp-2 text-slate-300">
                           {pair.a}
                         </p>
-                        <p className="mt-0.5 line-clamp-2 text-zinc-400">
+                        <p className="mt-0.5 line-clamp-2 text-slate-400">
                           {pair.b}
                         </p>
                       </div>
@@ -367,7 +367,7 @@ export default function CorrelationMatrix({ domainState }: CorrelationMatrixProp
 
             <button
               onClick={() => setSelected(null)}
-              className="mt-3 text-zinc-500 hover:text-zinc-300"
+              className="mt-3 text-slate-500 hover:text-slate-300"
             >
               閉じる
             </button>
@@ -376,7 +376,7 @@ export default function CorrelationMatrix({ domainState }: CorrelationMatrixProp
       </div>
 
       {/* Legend */}
-      <div className="mt-4 flex items-center gap-3 text-[10px] text-zinc-500">
+      <div className="mt-4 flex items-center gap-3 text-[10px] text-slate-500">
         <span>低</span>
         <div
           className="h-3 w-24 rounded"

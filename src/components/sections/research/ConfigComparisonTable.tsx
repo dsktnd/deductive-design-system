@@ -45,23 +45,23 @@ function ConfigComparisonTable({
   const materialsB = configB.material?.primary ?? [];
 
   return (
-    <div className="overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900/60">
+    <div className="overflow-hidden rounded-lg border border-slate-600 bg-slate-800/60">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-zinc-700 bg-zinc-800/40 px-4 py-2.5">
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+      <div className="flex items-center justify-between border-b border-slate-600 bg-slate-700/40 px-4 py-2.5">
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
           Architecture Config Comparison
         </h4>
         {(confA != null || confB != null) && (
-          <div className="flex items-center gap-3 text-[10px] text-zinc-500">
+          <div className="flex items-center gap-3 text-[10px] text-slate-500">
             <span>Confidence:</span>
             {confA != null && (
               <span>
-                A <span className="font-mono text-zinc-400">{confA}%</span>
+                A <span className="font-mono text-slate-400">{confA}%</span>
               </span>
             )}
             {confB != null && (
               <span>
-                B <span className="font-mono text-zinc-400">{confB}%</span>
+                B <span className="font-mono text-slate-400">{confB}%</span>
               </span>
             )}
           </div>
@@ -72,17 +72,17 @@ function ConfigComparisonTable({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-zinc-800">
-              <th className="w-[100px] px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            <tr className="border-b border-slate-700">
+              <th className="w-[100px] px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                 軸
               </th>
-              <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+              <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                 Concept A
               </th>
-              <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+              <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                 Concept B
               </th>
-              <th className="w-[60px] px-4 py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              <th className="w-[60px] px-4 py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                 比較
               </th>
             </tr>
@@ -91,28 +91,28 @@ function ConfigComparisonTable({
             {rows.map((row) => (
               <tr
                 key={row.key}
-                className={`border-b border-zinc-800/60 ${
+                className={`border-b border-slate-700/60 ${
                   row.same
                     ? "bg-transparent"
                     : "bg-amber-500/[0.04]"
                 }`}
               >
-                <td className="px-4 py-1.5 text-xs font-medium text-zinc-500">
+                <td className="px-4 py-1.5 text-xs font-medium text-slate-500">
                   {row.labelJa}
                 </td>
                 <td className="px-4 py-1.5">
-                  <span className={`text-xs font-medium ${row.same ? "text-zinc-500" : "text-zinc-200"}`}>
+                  <span className={`text-xs font-medium ${row.same ? "text-slate-500" : "text-slate-200"}`}>
                     {row.valA ?? "—"}
                   </span>
                 </td>
                 <td className="px-4 py-1.5">
-                  <span className={`text-xs font-medium ${row.same ? "text-zinc-500" : "text-zinc-200"}`}>
+                  <span className={`text-xs font-medium ${row.same ? "text-slate-500" : "text-slate-200"}`}>
                     {row.valB ?? "—"}
                   </span>
                 </td>
                 <td className="px-4 py-1.5 text-center">
                   {row.same ? (
-                    <span className="text-[10px] text-zinc-600">= 同</span>
+                    <span className="text-[10px] text-slate-500">= 同</span>
                   ) : (
                     <span className="text-[10px] font-medium text-amber-400/80">≠ 異</span>
                   )}
@@ -125,40 +125,40 @@ function ConfigComparisonTable({
 
       {/* Materials (array, separate display) */}
       {(materialsA.length > 0 || materialsB.length > 0) && (
-        <div className="border-t border-zinc-800 px-4 py-3">
-          <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+        <div className="border-t border-slate-700 px-4 py-3">
+          <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
             素材
           </div>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-zinc-500">A:</span>
+              <span className="text-[10px] text-slate-500">A:</span>
               {materialsA.map((m) => (
-                <span key={m} className="rounded bg-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-300">
+                <span key={m} className="rounded bg-slate-600 px-1.5 py-0.5 text-[10px] text-slate-300">
                   {m}
                 </span>
               ))}
-              {materialsA.length === 0 && <span className="text-[10px] text-zinc-600">—</span>}
+              {materialsA.length === 0 && <span className="text-[10px] text-slate-500">—</span>}
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-zinc-500">B:</span>
+              <span className="text-[10px] text-slate-500">B:</span>
               {materialsB.map((m) => (
-                <span key={m} className="rounded bg-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-300">
+                <span key={m} className="rounded bg-slate-600 px-1.5 py-0.5 text-[10px] text-slate-300">
                   {m}
                 </span>
               ))}
-              {materialsB.length === 0 && <span className="text-[10px] text-zinc-600">—</span>}
+              {materialsB.length === 0 && <span className="text-[10px] text-slate-500">—</span>}
             </div>
           </div>
         </div>
       )}
 
       {/* Summary */}
-      <div className="border-t border-zinc-800 bg-zinc-800/30 px-4 py-2.5">
+      <div className="border-t border-slate-700 bg-slate-700/30 px-4 py-2.5">
         <div className="flex items-center gap-4 text-[11px]">
-          <span className="text-zinc-500">
-            一致: <span className="font-mono font-medium text-zinc-400">{matchCount}/{total}軸</span>
+          <span className="text-slate-500">
+            一致: <span className="font-mono font-medium text-slate-400">{matchCount}/{total}軸</span>
           </span>
-          <span className="text-zinc-500">
+          <span className="text-slate-500">
             差異: <span className="font-mono font-medium text-amber-400/80">{diffCount}/{total}軸</span>
           </span>
         </div>

@@ -14,7 +14,7 @@ function OverallScoreDisplay({
   const scoreDelta = previousScore != null ? score - previousScore : null;
 
   return (
-    <div className="flex items-center gap-6 rounded-lg border border-zinc-700 bg-zinc-900/60 p-5">
+    <div className="flex items-center gap-6 rounded-lg border border-slate-600 bg-slate-800/60 p-5">
       {/* Circular score gauge */}
       <div className="relative flex-shrink-0">
         <svg width="120" height="120" viewBox="0 0 120 120">
@@ -63,17 +63,17 @@ function OverallScoreDisplay({
               {scoreDelta > 0 ? "+" : ""}{scoreDelta}
             </span>
           ) : (
-            <span className="text-[10px] text-zinc-500">/ 100</span>
+            <span className="text-[10px] text-slate-500">/ 100</span>
           )}
         </div>
       </div>
 
       {/* Overall comment */}
       <div className="flex-1">
-        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
           Overall Evaluation / 総合評価
         </div>
-        <p className="text-sm leading-relaxed text-zinc-300">{comment}</p>
+        <p className="text-sm leading-relaxed text-slate-300">{comment}</p>
       </div>
     </div>
   );

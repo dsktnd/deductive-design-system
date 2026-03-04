@@ -43,18 +43,19 @@ export default function ProcessNav() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-sm">
+    <header className="fixed top-0 left-0 right-0 z-40 border-b border-slate-700/50 bg-slate-900/90 backdrop-blur-md">
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
       <div className="mx-auto flex h-14 max-w-screen-2xl items-center justify-between px-8">
         <div className="flex items-center gap-4">
           <div className="flex items-baseline gap-3">
-            <h1 className="text-sm font-semibold tracking-widest text-zinc-100 uppercase">
+            <h1 className="font-[family-name:var(--font-dm-serif)] text-base text-slate-100 tracking-wide">
               Deductive Design
             </h1>
-            <span className="text-[10px] tracking-wider text-zinc-500">
+            <span className="text-[10px] tracking-wider text-slate-500">
               演繹的デザイン
             </span>
           </div>
-          <span className="text-zinc-700">|</span>
+          <span className="text-slate-600">|</span>
           <ProjectSelector />
         </div>
 
@@ -64,21 +65,21 @@ export default function ProcessNav() {
             return (
               <div key={item.id} className="flex items-center">
                 {i > 0 && (
-                  <span className="mx-1 text-zinc-700">--&gt;</span>
+                  <span className="mx-1 text-slate-600">--&gt;</span>
                 )}
                 <button
                   onClick={() => handleClick(item.id)}
-                  className={`group flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                  className={`group flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-all duration-200 ${
                     isActive
-                      ? "bg-zinc-800 text-zinc-100"
-                      : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
+                      ? "gradient-accent-subtle text-blue-300 border border-blue-500/30"
+                      : "text-slate-400 hover:bg-slate-700/50 hover:text-slate-200"
                   }`}
                 >
                   <span
-                    className={`flex h-6 w-6 items-center justify-center rounded text-xs font-bold ${
+                    className={`flex h-6 w-6 items-center justify-center rounded text-xs font-bold transition-all duration-200 ${
                       isActive
-                        ? "bg-zinc-100 text-zinc-900"
-                        : "bg-zinc-800 text-zinc-400 group-hover:bg-zinc-700 group-hover:text-zinc-200"
+                        ? "gradient-accent text-white"
+                        : "bg-slate-700 text-slate-400 group-hover:bg-slate-600 group-hover:text-slate-200"
                     }`}
                   >
                     {item.icon}

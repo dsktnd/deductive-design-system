@@ -41,19 +41,19 @@ export default function ProjectSelector() {
       <div className="relative" ref={dropRef}>
         <button
           onClick={() => setOpen(!open)}
-          className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-300 transition-colors hover:border-zinc-700 hover:text-zinc-100"
+          className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-slate-300 transition-colors hover:border-slate-600 hover:text-slate-100"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
           </svg>
           <span className="max-w-[120px] truncate">{currentProject?.name ?? "Project"}</span>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-zinc-500">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-500">
             <polyline points="6 9 12 15 18 9" />
           </svg>
         </button>
 
         {open && (
-          <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl">
+          <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-lg border border-slate-700 bg-slate-800 shadow-xl">
             <div className="max-h-60 overflow-y-auto p-1">
               {projects.map((p) => (
                 <button
@@ -64,19 +64,19 @@ export default function ProjectSelector() {
                   }}
                   className={`flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm transition-colors ${
                     p.id === currentProjectId
-                      ? "bg-zinc-800 text-zinc-100"
-                      : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
+                      ? "bg-slate-700 text-slate-100"
+                      : "text-slate-400 hover:bg-slate-700/50 hover:text-slate-200"
                   }`}
                 >
                   <span className="flex-1 truncate">{p.name}</span>
                   {p.id === currentProjectId && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-zinc-100" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-slate-100" />
                   )}
                 </button>
               ))}
             </div>
 
-            <div className="border-t border-zinc-800 p-1">
+            <div className="border-t border-slate-700 p-1">
               {showNew ? (
                 <div className="flex items-center gap-1 px-2 py-1">
                   <input
@@ -85,11 +85,11 @@ export default function ProjectSelector() {
                     onChange={(e) => setNewName(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleCreate()}
                     placeholder="Project name..."
-                    className="flex-1 rounded bg-zinc-800 px-2 py-1 text-sm text-zinc-200 placeholder-zinc-600 outline-none"
+                    className="flex-1 rounded bg-slate-700 px-2 py-1 text-sm text-slate-200 placeholder-slate-500 outline-none"
                   />
                   <button
                     onClick={handleCreate}
-                    className="rounded bg-zinc-700 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-600"
+                    className="rounded bg-slate-600 px-2 py-1 text-xs text-slate-200 hover:bg-slate-500"
                   >
                     OK
                   </button>
@@ -97,7 +97,7 @@ export default function ProjectSelector() {
               ) : (
                 <button
                   onClick={() => setShowNew(true)}
-                  className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-zinc-500 transition-colors hover:bg-zinc-800/50 hover:text-zinc-300"
+                  className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-slate-500 transition-colors hover:bg-slate-700/50 hover:text-slate-300"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <line x1="12" y1="5" x2="12" y2="19" />
@@ -111,7 +111,7 @@ export default function ProjectSelector() {
                   setOpen(false);
                   setManagerOpen(true);
                 }}
-                className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-zinc-500 transition-colors hover:bg-zinc-800/50 hover:text-zinc-300"
+                className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-slate-500 transition-colors hover:bg-slate-700/50 hover:text-slate-300"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="3" />

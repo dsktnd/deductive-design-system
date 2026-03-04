@@ -1,19 +1,66 @@
 @import "tailwindcss";
 
 :root {
-  --background: #09090b;
-  --foreground: #e4e4e7;
+  --background: #0f172a;
+  --foreground: #e2e8f0;
+  --accent-from: #2563eb;
+  --accent-to: #9333ea;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-montserrat);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-dm-serif);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Gradient utilities */
+.gradient-accent {
+  background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+}
+
+.gradient-accent-subtle {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(147, 51, 234, 0.15));
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Ambient background circles */
+@keyframes pulse-circle {
+  0%, 100% { transform: scale(1); opacity: 0.06; }
+  50% { transform: scale(1.15); opacity: 0.10; }
+}
+
+.bg-circle-blue {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: #2563eb;
+  animation: pulse-circle 8s ease-in-out infinite;
+  filter: blur(120px);
+  pointer-events: none;
+}
+
+.bg-circle-purple {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: #9333ea;
+  animation: pulse-circle 10s ease-in-out infinite 2s;
+  filter: blur(120px);
+  pointer-events: none;
 }

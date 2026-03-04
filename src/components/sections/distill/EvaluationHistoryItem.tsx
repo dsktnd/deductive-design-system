@@ -30,16 +30,16 @@ function EvaluationHistoryItem({
       onClick={onClick}
       className={`w-full rounded-lg border px-3 py-2 text-left transition-colors ${
         isActive
-          ? "border-zinc-600 bg-zinc-800/80"
-          : "border-zinc-800 bg-zinc-900/30 hover:border-zinc-700"
+          ? "border-slate-500 bg-slate-700/80"
+          : "border-slate-700 bg-slate-800/30 hover:border-slate-600"
       }`}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-zinc-800 text-[9px] font-bold text-zinc-500">
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-slate-700 text-[9px] font-bold text-slate-500">
             {index + 1}
           </span>
-          <span className="text-xs text-zinc-500">{timeStr}</span>
+          <span className="text-xs text-slate-500">{timeStr}</span>
         </div>
         <div className="flex items-center gap-1.5">
           {delta != null && delta !== 0 && (

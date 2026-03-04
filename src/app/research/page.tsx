@@ -62,13 +62,13 @@ function DomainCard({
   };
 
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-5">
+    <div className="rounded-lg border border-slate-700 bg-slate-800/60 p-5">
       <div className="mb-4 flex items-baseline gap-2">
-        <h3 className="text-base font-semibold text-zinc-100">{domain.ja}</h3>
-        <span className="text-xs text-zinc-500">{domain.en}</span>
+        <h3 className="text-base font-semibold text-slate-100">{domain.ja}</h3>
+        <span className="text-xs text-slate-500">{domain.en}</span>
       </div>
 
-      <label className="mb-1 block text-xs font-medium text-zinc-400">
+      <label className="mb-1 block text-xs font-medium text-slate-400">
         Notes / Findings
       </label>
       <textarea
@@ -78,10 +78,10 @@ function DomainCard({
         }
         rows={3}
         placeholder={`Research notes for ${domain.en}...`}
-        className="mb-4 w-full resize-y rounded border border-zinc-700 bg-zinc-800/80 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none"
+        className="mb-4 w-full resize-y rounded border border-slate-600 bg-slate-700/80 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 focus:outline-none"
       />
 
-      <label className="mb-1 block text-xs font-medium text-zinc-400">
+      <label className="mb-1 block text-xs font-medium text-slate-400">
         Weight
       </label>
       <div className="mb-4 flex items-center gap-3">
@@ -96,26 +96,26 @@ function DomainCard({
               weight: parseInt(e.target.value, 10),
             })
           }
-          className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-zinc-700 accent-zinc-300"
+          className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-slate-600 accent-blue-500"
         />
-        <span className="w-9 text-right font-mono text-sm text-zinc-300">
+        <span className="w-9 text-right font-mono text-sm text-slate-300">
           {state.weight}
         </span>
       </div>
 
-      <label className="mb-1 block text-xs font-medium text-zinc-400">
+      <label className="mb-1 block text-xs font-medium text-slate-400">
         Tags
       </label>
       <div className="flex flex-wrap items-center gap-1.5">
         {state.tags.map((tag) => (
           <span
             key={tag}
-            className="inline-flex items-center gap-1 rounded bg-zinc-700 px-2 py-0.5 text-xs text-zinc-300"
+            className="inline-flex items-center gap-1 rounded bg-slate-600 px-2 py-0.5 text-xs text-slate-300"
           >
             {tag}
             <button
               onClick={() => handleRemoveTag(tag)}
-              className="ml-0.5 text-zinc-500 hover:text-zinc-200"
+              className="ml-0.5 text-slate-500 hover:text-slate-200"
               aria-label={`Remove tag ${tag}`}
             >
               x
@@ -129,7 +129,7 @@ function DomainCard({
           onKeyDown={handleKeyDown}
           onBlur={handleAddTag}
           placeholder="Add tag..."
-          className="min-w-[80px] flex-1 border-b border-zinc-700 bg-transparent px-1 py-0.5 text-xs text-zinc-300 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none"
+          className="min-w-[80px] flex-1 border-b border-slate-600 bg-transparent px-1 py-0.5 text-xs text-slate-300 placeholder:text-slate-500 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 focus:outline-none"
         />
       </div>
     </div>
@@ -149,7 +149,7 @@ function SummaryPanel({
 
   if (active.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-zinc-800 px-4 py-8 text-center text-sm text-zinc-600">
+      <div className="rounded-lg border border-dashed border-slate-700 px-4 py-8 text-center text-sm text-slate-500">
         Add notes or tags to domains to see a summary here.
       </div>
     );
@@ -167,16 +167,16 @@ function SummaryPanel({
           return (
             <div key={d.key}>
               <div className="mb-1 flex items-baseline justify-between">
-                <span className="text-sm font-medium text-zinc-300">
+                <span className="text-sm font-medium text-slate-300">
                   {d.ja}
                 </span>
-                <span className="font-mono text-xs text-zinc-500">
+                <span className="font-mono text-xs text-slate-500">
                   {s.weight}
                 </span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-700">
                 <div
-                  className="h-full rounded-full bg-zinc-400 transition-all duration-200"
+                  className="h-full rounded-full bg-slate-400 transition-all duration-200"
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -185,7 +185,7 @@ function SummaryPanel({
                   {s.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-500"
+                      className="rounded bg-slate-700 px-1.5 py-0.5 text-[10px] text-slate-500"
                     >
                       {tag}
                     </span>
@@ -236,10 +236,10 @@ export default function ResearchPage() {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-zinc-100">
+      <h2 className="font-[family-name:var(--font-dm-serif)] text-xl text-slate-100">
         Research / リサーチ
       </h2>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-slate-500">
         Define and weight research conditions across the 7 domains.
       </p>
 
@@ -256,7 +256,7 @@ export default function ResearchPage() {
         </div>
 
         <aside className="xl:sticky xl:top-8 xl:self-start">
-          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500">
+          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">
             Condition Summary
           </h3>
           <SummaryPanel domains={DOMAINS} state={domainState} />
@@ -264,12 +264,12 @@ export default function ResearchPage() {
           <button
             onClick={handleProceed}
             disabled={activeCount === 0}
-            className="mt-6 w-full rounded-lg bg-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-900 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-600"
+            className="mt-6 w-full rounded-lg gradient-accent px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:scale-105 hover:shadow-blue-600/40 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500"
           >
             Proceed to Generate
           </button>
           {activeCount > 0 && (
-            <p className="mt-2 text-center text-xs text-zinc-600">
+            <p className="mt-2 text-center text-xs text-slate-500">
               {activeCount} domain{activeCount !== 1 ? "s" : ""} active
             </p>
           )}

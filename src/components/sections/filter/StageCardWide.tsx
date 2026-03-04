@@ -22,10 +22,10 @@ export default function StageCardWide({
     <div
       className={`flex gap-4 rounded-lg border p-4 transition-colors ${
         isActive
-          ? "border-zinc-500 bg-zinc-800/60"
+          ? "border-slate-500 bg-slate-700/60"
           : isDone
-          ? "border-zinc-700 bg-zinc-900/60"
-          : "border-zinc-800 bg-zinc-900/30"
+          ? "border-slate-600 bg-slate-800/60"
+          : "border-slate-700 bg-slate-800/30"
       }`}
     >
       <div className="flex w-40 flex-shrink-0 flex-col justify-center">
@@ -33,34 +33,34 @@ export default function StageCardWide({
           <span
             className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
               isDone
-                ? "bg-zinc-300 text-zinc-900"
+                ? "bg-slate-300 text-slate-800"
                 : isActive
-                ? "animate-pulse bg-zinc-500 text-zinc-100"
-                : "bg-zinc-800 text-zinc-500"
+                ? "animate-pulse bg-slate-500 text-slate-100"
+                : "bg-slate-700 text-slate-500"
             }`}
           >
             {index + 1}
           </span>
           <div>
-            <div className="text-sm font-semibold text-zinc-200">{stage.labelJa}</div>
-            <div className="text-[10px] text-zinc-500">{stage.label}</div>
+            <div className="text-sm font-semibold text-slate-200">{stage.labelJa}</div>
+            <div className="text-[10px] text-slate-500">{stage.label}</div>
           </div>
         </div>
         <div className="mt-1.5">
-          <span className="rounded bg-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-400">
+          <span className="rounded bg-slate-600 px-1.5 py-0.5 text-[10px] text-slate-400">
             {stage.style}
           </span>
         </div>
       </div>
 
-      <div className="aspect-square w-48 flex-shrink-0 overflow-hidden rounded-lg border border-zinc-800">
+      <div className="aspect-square w-48 flex-shrink-0 overflow-hidden rounded-lg border border-slate-700">
         <StageImageArea status={status} label={stage.labelJa} onEnlarge={onEnlarge} />
       </div>
 
       <div className="flex flex-1 flex-col justify-center">
-        <p className="text-xs leading-relaxed text-zinc-500">{stage.description}</p>
+        <p className="text-xs leading-relaxed text-slate-500">{stage.description}</p>
         {status?.image?.text && (
-          <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-zinc-400">
+          <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-slate-400">
             {status.image.text}
           </p>
         )}

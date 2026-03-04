@@ -227,19 +227,19 @@ export default function FilterSection() {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-zinc-100">Filter / コンセプト精緻化</h2>
-      <p className="mt-1 text-sm text-zinc-500">
+      <h2 className="font-[family-name:var(--font-dm-serif)] text-xl text-slate-100">Filter / コンセプト精緻化</h2>
+      <p className="mt-1 text-sm text-slate-500">
         選択された画像の方向性を分析し、精緻化コンセプトから抽象→具体の連鎖的なディテール画像を生成します。
       </p>
 
       {/* Section 1: Selected Images */}
       <section className="mt-6">
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
           Selected Images / 選択された画像
         </h3>
 
         {generatedDesigns.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-zinc-800 px-6 py-12 text-center text-sm text-zinc-600">
+          <div className="rounded-lg border border-dashed border-slate-700 px-6 py-12 text-center text-sm text-slate-500">
             No images selected yet. Go to Generate and add images to filter.
           </div>
         ) : (
@@ -261,13 +261,13 @@ export default function FilterSection() {
       {/* Section 2: Concept Refinement */}
       {generatedDesigns.length > 0 && (
         <section className="mt-8">
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
             Concept Refinement / コンセプト精緻化
           </h3>
 
           {!refinedConcept ? (
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-6 text-center">
-              <p className="mb-4 text-sm text-zinc-400">
+            <div className="rounded-lg border border-slate-700 bg-slate-800/40 p-6 text-center">
+              <p className="mb-4 text-sm text-slate-400">
                 {conceptA && conceptB
                   ? `「${conceptA.title}」と「${conceptB.title}」のスペクトラムから選ばれた画像の傾向を分析し、精緻化コンセプトを生成します。`
                   : "コンセプトが2つ必要です。Research ページでコンセプトを生成してください。"}
@@ -275,37 +275,37 @@ export default function FilterSection() {
               <button
                 onClick={handleRefine}
                 disabled={isRefining || !conceptA || !conceptB}
-                className="rounded-lg bg-zinc-200 px-6 py-2.5 text-sm font-semibold text-zinc-900 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-500"
+                className="rounded-lg gradient-accent px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:scale-105 hover:shadow-blue-600/40 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-500"
               >
                 {isRefining ? "精緻化中..." : "コンセプトを精緻化"}
               </button>
               {refineError && <p className="mt-3 text-xs text-red-400">{refineError}</p>}
             </div>
           ) : (
-            <div className="rounded-lg border border-zinc-700 bg-zinc-900/60 p-5">
+            <div className="rounded-lg border border-slate-600 bg-slate-800/60 p-5">
               {isEditing ? (
                 <div className="space-y-3">
                   <input
                     value={editingTitle}
                     onChange={(e) => setEditingTitle(e.target.value)}
-                    className="w-full rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm font-semibold text-zinc-100 focus:border-zinc-400 focus:outline-none"
+                    className="w-full rounded border border-slate-500 bg-slate-700 px-3 py-2 text-sm font-semibold text-slate-100 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 focus:outline-none"
                   />
                   <textarea
                     value={editingDescription}
                     onChange={(e) => setEditingDescription(e.target.value)}
                     rows={4}
-                    className="w-full resize-y rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-zinc-300 focus:border-zinc-400 focus:outline-none"
+                    className="w-full resize-y rounded border border-slate-500 bg-slate-700 px-3 py-2 text-sm text-slate-300 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 focus:outline-none"
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={handleSaveEdit}
-                      className="rounded bg-zinc-200 px-4 py-1.5 text-xs font-semibold text-zinc-900 hover:bg-white"
+                      className="rounded gradient-accent px-4 py-1.5 text-xs font-semibold text-white shadow-md shadow-blue-600/20 transition-all duration-200 hover:scale-105"
                     >
                       Save
                     </button>
                     <button
                       onClick={() => setIsEditing(false)}
-                      className="rounded border border-zinc-700 px-4 py-1.5 text-xs text-zinc-400 hover:border-zinc-500"
+                      className="rounded border border-slate-600 px-4 py-1.5 text-xs text-slate-400 hover:border-slate-500"
                     >
                       Cancel
                     </button>
@@ -315,10 +315,10 @@ export default function FilterSection() {
                 <>
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                         Refined Concept
                       </div>
-                      <h4 className="text-base font-semibold text-zinc-100">{refinedConcept.title}</h4>
+                      <h4 className="text-base font-semibold text-slate-100">{refinedConcept.title}</h4>
                     </div>
                     <div className="flex gap-1.5">
                       <button
@@ -327,19 +327,19 @@ export default function FilterSection() {
                           setEditingDescription(refinedConcept.description);
                           setIsEditing(true);
                         }}
-                        className="rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-400 hover:border-zinc-500 hover:text-zinc-300"
+                        className="rounded border border-slate-600 px-3 py-1 text-xs text-slate-400 hover:border-slate-500 hover:text-slate-300"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => setRefinedConcept(null)}
-                        className="rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-400 hover:border-red-700 hover:text-red-400"
+                        className="rounded border border-slate-600 px-3 py-1 text-xs text-slate-400 hover:border-red-700 hover:text-red-400"
                       >
                         Reset
                       </button>
                     </div>
                   </div>
-                  <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                  <p className="mt-2 text-sm leading-relaxed text-slate-400">
                     {refinedConcept.description}
                   </p>
                 </>
@@ -352,24 +352,24 @@ export default function FilterSection() {
       {/* Section 3: Cascading Detail Generation */}
       {refinedConcept && (
         <section className="mt-8">
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
             Detail Generation / ディテール画像生成
           </h3>
 
-          <div className="mb-4 rounded-lg border border-zinc-800 bg-zinc-900/40 px-4 py-3">
+          <div className="mb-4 rounded-lg border border-slate-700 bg-slate-800/40 px-4 py-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-zinc-400">
+                <p className="text-sm text-slate-400">
                   抽象→具体の順に連鎖生成。各段階の画像が次の段階の参照になります。
                 </p>
-                <p className="mt-0.5 text-[10px] text-zinc-600">
+                <p className="mt-0.5 text-[10px] text-slate-500">
                   Diagram → Concept → Material → Exterior → Interior
                 </p>
               </div>
               <button
                 onClick={handleGenerateDetails}
                 disabled={isGeneratingDetails}
-                className="flex-shrink-0 rounded-lg bg-zinc-200 px-5 py-2 text-sm font-semibold text-zinc-900 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-500"
+                className="flex-shrink-0 rounded-lg gradient-accent px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:scale-105 hover:shadow-blue-600/40 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-500"
               >
                 {isGeneratingDetails
                   ? `生成中 ${currentStageIndex + 1}/${DETAIL_STAGES.length}...`
@@ -402,7 +402,7 @@ export default function FilterSection() {
               <line x1="83.33%" y1="20" x2="50%" y2="20" stroke="rgb(82 82 91)" strokeWidth="1" />
               <line x1="50%" y1="20" x2="50%" y2="40" stroke="rgb(82 82 91)" strokeWidth="1" />
             </svg>
-            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded bg-zinc-800 px-2 py-0.5 text-[10px] text-zinc-500">
+            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded bg-slate-700 px-2 py-0.5 text-[10px] text-slate-500">
               3 images as reference
             </span>
           </div>
@@ -418,9 +418,9 @@ export default function FilterSection() {
                       <div className="flex items-center gap-2">
                         <div className={`h-6 w-px ${
                           stageStatus[stage.key]?.image || (isGeneratingDetails && currentStageIndex === globalIndex)
-                            ? "bg-zinc-500" : "bg-zinc-800"
+                            ? "bg-slate-500" : "bg-slate-700"
                         }`} />
-                        <span className="text-[10px] text-zinc-600">
+                        <span className="text-[10px] text-slate-500">
                           {globalIndex} images as reference
                         </span>
                       </div>

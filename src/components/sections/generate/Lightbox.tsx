@@ -21,7 +21,7 @@ function Lightbox({
         <img src={src} alt={alt} className="max-h-[85vh] rounded-lg object-contain" />
         <button
           onClick={onClose}
-          className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-sm text-zinc-300 hover:bg-zinc-700"
+          className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-slate-700 text-sm text-slate-300 hover:bg-slate-600"
         >
           x
         </button>

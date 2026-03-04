@@ -31,14 +31,14 @@ function DomainCard({
   const scoreDelta = previousScore != null ? evaluation.score - previousScore : null;
 
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
+    <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
       {/* Header with domain name and score */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-zinc-200">
+          <span className="text-sm font-semibold text-slate-200">
             {labels.ja}
           </span>
-          <span className="text-xs text-zinc-500">{labels.en}</span>
+          <span className="text-xs text-slate-500">{labels.en}</span>
         </div>
         <div className="flex items-center gap-2">
           {scoreDelta != null && scoreDelta !== 0 && (
@@ -59,7 +59,7 @@ function DomainCard({
       </div>
 
       {/* Score bar */}
-      <div className="mb-3 h-2 rounded-full bg-zinc-800">
+      <div className="mb-3 h-2 rounded-full bg-slate-700">
         <div
           className={`h-full rounded-full transition-all duration-700 ${scoreColor(evaluation.score)}`}
           style={{ width: `${evaluation.score}%` }}
@@ -67,7 +67,7 @@ function DomainCard({
       </div>
 
       {/* Comment */}
-      <p className="mb-3 text-xs leading-relaxed text-zinc-400">
+      <p className="mb-3 text-xs leading-relaxed text-slate-400">
         {evaluation.comment}
       </p>
 
@@ -113,7 +113,7 @@ function DomainCard({
 
       {/* Improve button for low scores */}
       {evaluation.score < 60 && (
-        <div className="mt-3 border-t border-zinc-800 pt-3">
+        <div className="mt-3 border-t border-slate-700 pt-3">
           <button
             onClick={() => {
               if (!improvementData && !isLoadingImprovement) {
@@ -146,14 +146,14 @@ function DomainCard({
             <div className="mt-3 space-y-3">
               {/* Suggestions */}
               <div>
-                <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                   AI Improvement Suggestions
                 </div>
                 <ul className="space-y-1.5">
                   {improvementData.suggestions.map((s, i) => (
                     <li
                       key={i}
-                      className="rounded border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-xs leading-relaxed text-zinc-300"
+                      className="rounded border border-slate-700 bg-slate-800/80 px-3 py-2 text-xs leading-relaxed text-slate-300"
                     >
                       {s}
                     </li>
@@ -164,7 +164,7 @@ function DomainCard({
               {/* Regeneration hints */}
               {improvementData.revisedPromptHints.length > 0 && (
                 <div>
-                  <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                     Suggested Regeneration
                   </div>
                   <div className="space-y-2">
@@ -174,22 +174,22 @@ function DomainCard({
                       return (
                         <div
                           key={i}
-                          className="rounded border border-zinc-800 bg-zinc-900/80 px-3 py-2"
+                          className="rounded border border-slate-700 bg-slate-800/80 px-3 py-2"
                         >
                           <div className="mb-1 flex items-center justify-between">
-                            <span className="text-[10px] font-semibold text-zinc-400">
+                            <span className="text-[10px] font-semibold text-slate-400">
                               {stageLabel?.labelJa ?? ph.targetImage}{" "}
-                              <span className="text-zinc-600">{stageLabel?.label}</span>
+                              <span className="text-slate-500">{stageLabel?.label}</span>
                             </span>
                             <button
                               onClick={() => onRegenerateImage(ph.targetImage, ph.hint)}
                               disabled={isRegenerating}
-                              className="rounded border border-zinc-600 px-2 py-0.5 text-[10px] font-medium text-zinc-300 transition-colors hover:border-zinc-400 hover:text-white disabled:opacity-50"
+                              className="rounded border border-slate-500 px-2 py-0.5 text-[10px] font-medium text-slate-300 transition-colors hover:border-slate-400 hover:text-white disabled:opacity-50"
                             >
                               {isRegenerating ? "再生成中..." : "再生成"}
                             </button>
                           </div>
-                          <p className="text-xs leading-relaxed text-zinc-500">
+                          <p className="text-xs leading-relaxed text-slate-500">
                             {ph.hint}
                           </p>
                         </div>
@@ -203,8 +203,8 @@ function DomainCard({
 
           {/* Loading state */}
           {showImprovement && isLoadingImprovement && (
-            <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-600 border-t-zinc-300" />
+            <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-500 border-t-slate-300" />
               改善提案を生成中...
             </div>
           )}

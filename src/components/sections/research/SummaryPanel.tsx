@@ -15,7 +15,7 @@ function SummaryPanel({
 
   if (active.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-zinc-800 px-4 py-8 text-center text-sm text-zinc-600">
+      <div className="rounded-lg border border-dashed border-slate-700 px-4 py-8 text-center text-sm text-slate-500">
         Add notes or tags to domains to see a summary here.
       </div>
     );
@@ -33,21 +33,21 @@ function SummaryPanel({
           return (
             <div key={d.key}>
               <div className="mb-1 flex items-baseline justify-between">
-                <span className="text-sm font-medium text-zinc-300">
+                <span className="text-sm font-medium text-slate-300">
                   {d.ja}
                 </span>
-                <span className="font-mono text-xs text-zinc-500">
+                <span className="font-mono text-xs text-slate-500">
                   {s.weight}
                 </span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-700">
                 <div
-                  className="h-full rounded-full bg-zinc-400 transition-all duration-200"
+                  className="h-full rounded-full bg-slate-400 transition-all duration-200"
                   style={{ width: `${pct}%` }}
                 />
               </div>
               {s.relatedDomains && s.relatedDomains.length > 0 && (
-                <div className="mt-1 flex items-center gap-1 text-[10px] text-zinc-500">
+                <div className="mt-1 flex items-center gap-1 text-[10px] text-slate-500">
                   <span>→</span>
                   {s.relatedDomains.map((rd) => (
                     <span key={rd}>{DOMAIN_LABELS[rd] ?? rd}</span>
@@ -63,7 +63,7 @@ function SummaryPanel({
                   {s.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-500"
+                      className="rounded bg-slate-700 px-1.5 py-0.5 text-[10px] text-slate-500"
                     >
                       {tag}
                     </span>

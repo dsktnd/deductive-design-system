@@ -255,11 +255,11 @@ export default function ResearchGraph({
 
   if (findingCount === 0) {
     return (
-      <div className="flex h-[500px] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-zinc-800 bg-zinc-900/40">
-        <p className="text-sm text-zinc-500">
+      <div className="flex h-[500px] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-700 bg-slate-800/40">
+        <p className="text-sm text-slate-500">
           グラフに表示するFindingsがありません
         </p>
-        <p className="text-xs text-zinc-600">
+        <p className="text-xs text-slate-500">
           各ドメインカードの「研究する」でFindingsを取得してください
         </p>
       </div>
@@ -272,7 +272,7 @@ export default function ResearchGraph({
     <div className="relative">
       <svg
         ref={svgRef}
-        className="h-[600px] w-full cursor-grab rounded-lg border border-zinc-800 bg-zinc-900"
+        className="h-[600px] w-full cursor-grab rounded-lg border border-slate-700 bg-slate-800"
         style={{ touchAction: "none" }}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -459,7 +459,7 @@ export default function ResearchGraph({
       {/* Tooltip */}
       {tooltip && (
         <div
-          className="pointer-events-none fixed z-50 max-w-xs rounded border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200 shadow-lg"
+          className="pointer-events-none fixed z-50 max-w-xs rounded border border-slate-600 bg-slate-700 px-3 py-1.5 text-xs text-slate-200 shadow-lg"
           style={{
             left: tooltip.x + 12,
             top: tooltip.y,
@@ -470,7 +470,7 @@ export default function ResearchGraph({
       )}
 
       {/* Legend */}
-      <div className="absolute bottom-3 left-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded border border-zinc-800 bg-zinc-900/90 px-3 py-2 text-[10px] text-zinc-500">
+      <div className="absolute bottom-3 left-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded border border-slate-700 bg-slate-800/90 px-3 py-2 text-[10px] text-slate-500">
         {/* Domain colors */}
         <span className="flex items-center gap-1">
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#4ade80]" />
@@ -497,7 +497,7 @@ export default function ResearchGraph({
           技術
         </span>
         {/* Concept anchors */}
-        <span className="border-l border-zinc-700 pl-3 flex items-center gap-1">
+        <span className="border-l border-slate-600 pl-3 flex items-center gap-1">
           <span className="inline-block h-3 w-3 rounded-full bg-[#22d3ee]" />
           <span className="font-semibold text-[#22d3ee]">A</span>
         </span>
@@ -506,7 +506,7 @@ export default function ResearchGraph({
           <span className="font-semibold text-[#fb923c]">B</span>
         </span>
         {/* Finding type rings */}
-        <span className="border-l border-zinc-700 pl-3 text-zinc-400">Ring:</span>
+        <span className="border-l border-slate-600 pl-3 text-slate-400">Ring:</span>
         <span className="flex items-center gap-1">
           <span className="inline-block h-2 w-2 rounded-full border-[1.5px] border-[#60a5fa] bg-transparent" />
           事実
@@ -526,18 +526,18 @@ export default function ResearchGraph({
         <span className="flex items-center gap-1">
           <span className="text-yellow-400">★</span> 重要
         </span>
-        <span className="border-l border-zinc-700 pl-3 flex items-center gap-1">
-          <span className="inline-block h-px w-5 bg-zinc-400" />
+        <span className="border-l border-slate-600 pl-3 flex items-center gap-1">
+          <span className="inline-block h-px w-5 bg-slate-400" />
           関連性（太=強）
         </span>
       </div>
 
       {/* Controls hint + stats */}
       <div className="absolute right-3 top-3 flex flex-col items-end gap-1.5">
-        <div className="rounded border border-zinc-800 bg-zinc-900/90 px-2.5 py-1.5 text-[10px] text-zinc-600">
+        <div className="rounded border border-slate-700 bg-slate-800/90 px-2.5 py-1.5 text-[10px] text-slate-500">
           Scroll: zoom / Drag bg: pan / Drag: move / Click: detail
         </div>
-        <div className="rounded border border-zinc-800 bg-zinc-900/90 px-2.5 py-1 text-[10px] text-zinc-500">
+        <div className="rounded border border-slate-700 bg-slate-800/90 px-2.5 py-1 text-[10px] text-slate-500">
           {findingCount} findings / {nodes.length} nodes / {edges.length} edges
         </div>
       </div>

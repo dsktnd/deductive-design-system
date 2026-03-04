@@ -24,16 +24,16 @@ function ScoreBar({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="w-20 text-right text-[10px] text-zinc-500">
-        {label} <span className="text-zinc-700">{labelJa}</span>
+      <span className="w-20 text-right text-[10px] text-slate-500">
+        {label} <span className="text-slate-600">{labelJa}</span>
       </span>
-      <div className="flex-1 h-1.5 rounded-full bg-zinc-800">
+      <div className="flex-1 h-1.5 rounded-full bg-slate-700">
         <div
-          className="h-full rounded-full bg-zinc-400"
+          className="h-full rounded-full bg-slate-400"
           style={{ width: `${value}%` }}
         />
       </div>
-      <span className="w-6 text-right text-[10px] tabular-nums text-zinc-500">
+      <span className="w-6 text-right text-[10px] tabular-nums text-slate-500">
         {value}
       </span>
     </div>
@@ -57,11 +57,11 @@ function ComparisonCard({
     <div
       className={`flex flex-col rounded border transition-colors ${
         selected
-          ? "border-zinc-400 bg-zinc-800/60"
-          : "border-zinc-800 bg-zinc-900/50"
+          ? "border-slate-400 bg-slate-700/60"
+          : "border-slate-700 bg-slate-800/50"
       }`}
     >
-      <div className="aspect-square w-full overflow-hidden rounded-t bg-zinc-800">
+      <div className="aspect-square w-full overflow-hidden rounded-t bg-slate-700">
         {design.imageUrl ? (
           <img
             src={design.imageUrl}
@@ -69,14 +69,14 @@ function ComparisonCard({
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-xs text-zinc-600">
+          <div className="flex h-full items-center justify-center text-xs text-slate-500">
             No image
           </div>
         )}
       </div>
 
       <div className="flex flex-1 flex-col p-3">
-        <p className="mb-3 text-xs leading-relaxed text-zinc-400 line-clamp-2">
+        <p className="mb-3 text-xs leading-relaxed text-slate-400 line-clamp-2">
           {design.prompt}
         </p>
 
@@ -95,7 +95,7 @@ function ComparisonCard({
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
           placeholder="Notes..."
-          className="mb-3 w-full resize-none rounded border border-zinc-800 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-300 placeholder:text-zinc-700 focus:border-zinc-600 focus:outline-none"
+          className="mb-3 w-full resize-none rounded border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs text-slate-300 placeholder:text-slate-600 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 focus:outline-none"
           rows={2}
         />
 
@@ -103,8 +103,8 @@ function ComparisonCard({
           onClick={onSelect}
           className={`mt-auto rounded px-3 py-1.5 text-xs transition-colors ${
             selected
-              ? "bg-zinc-200 text-zinc-900"
-              : "border border-zinc-700 bg-zinc-800 text-zinc-300 hover:border-zinc-600"
+              ? "gradient-accent text-white"
+              : "border border-slate-600 bg-slate-700 text-slate-300 hover:border-slate-500"
           }`}
         >
           {selected ? "Selected" : "Select"}
@@ -125,26 +125,26 @@ export default function DistillPage() {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-zinc-100">
+      <h2 className="font-[family-name:var(--font-dm-serif)] text-xl text-slate-100">
         Distill / 蒸留
       </h2>
-      <p className="mt-2 text-sm text-zinc-500">
+      <p className="mt-2 text-sm text-slate-500">
         Final convergence -- apply human judgment to the refined candidate set.
       </p>
 
       {filteredDesigns.length === 0 ? (
-        <div className="mt-8 rounded border border-dashed border-zinc-800 px-6 py-12 text-center text-sm text-zinc-600">
+        <div className="mt-8 rounded border border-dashed border-slate-700 px-6 py-12 text-center text-sm text-slate-500">
           No candidates yet. Filter generated designs first, then send them here
           for final distillation.
         </div>
       ) : (
         <>
           <div className="mt-4 flex items-center justify-between">
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-slate-500">
               {filteredDesigns.length} candidate{filteredDesigns.length !== 1 ? "s" : ""} for final evaluation
             </p>
             {selectedId && (
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-slate-400">
                 Final selection: {selectedId}
               </p>
             )}
