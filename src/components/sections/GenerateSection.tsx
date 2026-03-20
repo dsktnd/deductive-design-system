@@ -83,8 +83,8 @@ export default function GenerateSection() {
   const topTwo = useMemo(() => {
     if (hasConcepts) return null;
     const sorted = [...conditions]
-      .filter((c) => c.weight > 0.2)
-      .sort((a, b) => b.weight - a.weight);
+      .filter((c) => (c.weight ?? 0.5) > 0.2)
+      .sort((a, b) => (b.weight ?? 0.5) - (a.weight ?? 0.5));
     return sorted.length >= 2 ? [sorted[0], sorted[1]] : null;
   }, [conditions, hasConcepts]);
 
@@ -288,7 +288,7 @@ export default function GenerateSection() {
       try {
         const apiConditions = conditions.map((c) => ({
           domain: c.domain,
-          weight: c.weight,
+          weight: c.weight ?? 0.5,
           notes: c.notes,
           tags: c.tags,
         }));
@@ -347,7 +347,7 @@ export default function GenerateSection() {
       try {
         const apiConditions = conditions.map((c) => ({
           domain: c.domain,
-          weight: c.weight,
+          weight: c.weight ?? 0.5,
           notes: c.notes,
           tags: c.tags,
         }));

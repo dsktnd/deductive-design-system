@@ -140,36 +140,6 @@ function DomainDetailModal({
           </div>
         )}
 
-        {/* Weight + Rationale */}
-        <div className="mb-5 rounded-lg border border-slate-700 bg-slate-700/40 p-4">
-          <label className="mb-1.5 block text-xs font-medium text-slate-400">
-            Weight
-          </label>
-          <div className="mb-2 flex items-center gap-3">
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={state.weight}
-              onChange={(e) =>
-                onChange(domain.key, {
-                  ...state,
-                  weight: parseInt(e.target.value, 10),
-                })
-              }
-              className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-slate-600 accent-blue-500"
-            />
-            <span className="w-9 text-right font-mono text-sm text-slate-300">
-              {state.weight}
-            </span>
-          </div>
-          {state.weightRationale && (
-            <p className="text-xs leading-relaxed text-slate-500">
-              理由: {state.weightRationale}
-            </p>
-          )}
-        </div>
-
         {/* Findings by category with star/exclude toggles */}
         {findings.length > 0 && (
           <div className="mb-5 space-y-3">

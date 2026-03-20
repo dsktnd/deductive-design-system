@@ -1,19 +1,15 @@
 "use client";
 
-import { useState, useCallback, lazy, Suspense } from "react";
-import { ResearchDomain, type ResearchCondition, type ResearchFinding, type ResearchJob, type ArchitecturalConcept, type ArchitectureConfig, type DomainState } from "@/lib/types";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { ResearchDomain, type ResearchCondition, type ResearchFinding, type ResearchKeyword, type ResearchJob, type ArchitecturalConcept, type ArchitectureConfig, type DomainState } from "@/lib/types";
 import { useStore } from "@/lib/store";
-import { DOMAINS, createInitialState, conditionsToState } from "./research/constants";
+import { DOMAINS, DOMAIN_COLORS, DOMAIN_LABELS, createInitialState, conditionsToState } from "./research/constants";
 import DomainDetailModal from "./research/DomainDetailModal";
-import DomainCard from "./research/DomainCard";
-import SummaryPanel from "./research/SummaryPanel";
 import JobHistory from "./research/JobHistory";
 import ConceptComparisonPanel from "./research/ConceptComparisonPanel";
 import ConfigComparisonTable from "./research/ConfigComparisonTable";
 import ConceptBlendPanel from "./research/ConceptBlendPanel";
-
-const ResearchGraph = lazy(() => import("@/components/ResearchGraph"));
-import CorrelationMatrix from "./research/CorrelationMatrix";
+import KeywordCloud from "@/components/KeywordCloud";
 
 // --- Main Section ---
 
@@ -32,21 +28,25 @@ export default function ResearchSection() {
   const loadResearchJob = useStore((s) => s.loadResearchJob);
   const selectedConcepts = useStore((s) => s.selectedConcepts);
   const setSelectedConcepts = useStore((s) => s.setSelectedConcepts);
+  const selectedKeywordTexts = useStore((s) => s.selectedKeywordTexts);
+  const toggleKeyword = useStore((s) => s.toggleKeyword);
+  const clearSelectedKeywords = useStore((s) => s.clearSelectedKeywords);
 
   const [concepts, setConcepts] = useState<ArchitecturalConcept[]>([]);
   const [isProposingConcepts, setIsProposingConcepts] = useState(false);
   const [conceptError, setConceptError] = useState<string | null>(null);
-  const [weightsChangedSinceConcept, setWeightsChangedSinceConcept] = useState(false);
   const [researchingDomains, setResearchingDomains] = useState<Set<string>>(new Set());
   const [completedDomains, setCompletedDomains] = useState(0);
 
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateError, setTranslateError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"cards" | "graph" | "matrix">("cards");
+  const [embeddingPositions, setEmbeddingPositions] = useState<Map<string, [number, number]> | null>(null);
+  const embedAbortRef = useRef<AbortController | null>(null);
 
   const [hasRestored, setHasRestored] = useState(false);
   if (!hasRestored && conditions.length > 0) {
-    setDomainState(conditionsToState(conditions));
+    const restored = conditionsToState(conditions);
+    setDomainState(restored);
     if (selectedConcepts.length >= 2) {
       setConcepts(selectedConcepts);
     }
@@ -59,24 +59,140 @@ export default function ResearchSection() {
   const handleChange = useCallback(
     (key: ResearchDomain, next: DomainState) => {
       setDomainState((prev) => ({ ...prev, [key]: next }));
-      if (concepts.length >= 2) {
-        setWeightsChangedSinceConcept(true);
+    },
+    []
+  );
+
+  const fetchEmbeddings = useCallback(
+    async (state: Record<string, DomainState>) => {
+      // Collect all keyword texts grouped by domain for fallback
+      const allTexts: string[] = [];
+      const textToDomain: Record<string, ResearchDomain> = {};
+      const domainKeys = Object.values(ResearchDomain);
+      for (const key of domainKeys) {
+        for (const kw of state[key].keywords ?? []) {
+          if (!allTexts.includes(kw.text)) {
+            allTexts.push(kw.text);
+            textToDomain[kw.text] = key;
+          }
+        }
+      }
+      if (allTexts.length === 0) {
+        setEmbeddingPositions(null);
+        return;
+      }
+
+      // Build fallback positions (domain-based circular layout)
+      const buildFallback = () => {
+        const map = new Map<string, [number, number]>();
+        const domainCounters: Record<string, number> = {};
+        const domainTotals: Record<string, number> = {};
+        for (const t of allTexts) {
+          const d = textToDomain[t];
+          domainTotals[d] = (domainTotals[d] ?? 0) + 1;
+        }
+        for (const t of allTexts) {
+          const d = textToDomain[t];
+          const idx = domainCounters[d] ?? 0;
+          domainCounters[d] = idx + 1;
+          const dIdx = domainKeys.indexOf(d);
+          const angle = (dIdx / domainKeys.length) * Math.PI * 2;
+          const spread = 0.15;
+          const r = 0.4 + (idx / Math.max(1, domainTotals[d] - 1)) * 0.4;
+          const x = Math.cos(angle) * r + (Math.random() - 0.5) * spread;
+          const y = Math.sin(angle) * r + (Math.random() - 0.5) * spread;
+          map.set(t, [
+            Math.max(-1, Math.min(1, x)),
+            Math.max(-1, Math.min(1, y)),
+          ]);
+        }
+        return map;
+      };
+
+      // Abort any in-flight request
+      embedAbortRef.current?.abort();
+      const controller = new AbortController();
+      embedAbortRef.current = controller;
+
+      try {
+        const res = await fetch("/api/research/embed", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ keywords: allTexts }),
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          console.warn("Embed API failed, using fallback layout:", res.status);
+          setEmbeddingPositions(buildFallback());
+          return;
+        }
+        const data = await res.json();
+        if (!Array.isArray(data.positions)) {
+          setEmbeddingPositions(buildFallback());
+          return;
+        }
+
+        const map = new Map<string, [number, number]>();
+        for (let i = 0; i < allTexts.length; i++) {
+          if (data.positions[i]) {
+            map.set(allTexts[i], data.positions[i] as [number, number]);
+          }
+        }
+        setEmbeddingPositions(map);
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        console.warn("Embed API error, using fallback layout:", err);
+        setEmbeddingPositions(buildFallback());
       }
     },
-    [concepts.length]
+    []
   );
+
+  // Fetch embeddings when state is restored from store
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (hasRestored && !restoredRef.current) {
+      restoredRef.current = true;
+      fetchEmbeddings(domainState);
+    }
+  }, [hasRestored, domainState, fetchEmbeddings]);
 
   const handleLoadJob = useCallback(
     (jobId: string) => {
       const job = researchJobs.find((j) => j.id === jobId);
       if (job) {
         setTheme(job.theme);
-        setDomainState(conditionsToState(job.conditions));
+        const restored = conditionsToState(job.conditions);
+        setDomainState(restored);
         loadResearchJob(jobId);
+        fetchEmbeddings(restored);
       }
     },
-    [researchJobs, loadResearchJob]
+    [researchJobs, loadResearchJob, fetchEmbeddings]
   );
+
+  const selectedKeywordsSet = useMemo(
+    () => new Set(selectedKeywordTexts),
+    [selectedKeywordTexts]
+  );
+
+  // Compute keyword selection breakdown by domain
+  const keywordSelectionInfo = useMemo(() => {
+    const domainCounts: Record<string, number> = {};
+    const allKeywords: ResearchKeyword[] = [];
+
+    for (const key of Object.values(ResearchDomain)) {
+      const keywords = domainState[key].keywords ?? [];
+      for (const kw of keywords) {
+        allKeywords.push(kw);
+        if (selectedKeywordsSet.has(kw.text)) {
+          domainCounts[key] = (domainCounts[key] ?? 0) + 1;
+        }
+      }
+    }
+
+    return { domainCounts, allKeywords, total: selectedKeywordTexts.length };
+  }, [domainState, selectedKeywordsSet, selectedKeywordTexts.length]);
 
   const handleResearch = async () => {
     if (!theme.trim()) return;
@@ -84,7 +200,7 @@ export default function ResearchSection() {
     setResearchError(null);
     setCompletedDomains(0);
     setResearchingDomains(new Set(DOMAINS.map((d) => d.key)));
-    // Mark all domains as researching in the domain state
+    // Mark all domains as researching
     setDomainState((prev) => {
       const next = { ...prev };
       for (const d of DOMAINS) {
@@ -128,12 +244,22 @@ export default function ResearchSection() {
             if (event.type === "domain") {
               const result = event.result;
               const key = event.domain as ResearchDomain;
+
+              // Map keywords from API response
+              const apiKeywords: ResearchKeyword[] = Array.isArray(result.keywords)
+                ? result.keywords.map((k: { text: string; relevance: number; finding_indices?: number[] }) => ({
+                    text: k.text,
+                    relevance: typeof k.relevance === "number" ? k.relevance : 50,
+                    domain: key,
+                    findingIndices: Array.isArray(k.finding_indices) ? k.finding_indices : [],
+                  }))
+                : [];
+
               accumulated[key] = {
                 notes: result.notes || "",
-                weight: typeof result.weight === "number" ? result.weight : 50,
                 tags: Array.isArray(result.tags) ? result.tags : [],
                 findings: Array.isArray(result.findings) ? result.findings : undefined,
-                weightRationale: typeof result.weight_rationale === "string" ? result.weight_rationale : undefined,
+                keywords: apiKeywords,
                 relatedDomains: Array.isArray(result.related_domains) ? result.related_domains : undefined,
                 isResearching: false,
               };
@@ -162,10 +288,9 @@ export default function ResearchSection() {
       const jobConditions: ResearchCondition[] = DOMAINS.map((d) => ({
         domain: d.key,
         notes: accumulated[d.key].notes,
-        weight: accumulated[d.key].weight / 100,
         tags: accumulated[d.key].tags,
         findings: accumulated[d.key].findings,
-        weightRationale: accumulated[d.key].weightRationale,
+        keywords: accumulated[d.key].keywords,
         relatedDomains: accumulated[d.key].relatedDomains,
       }));
 
@@ -176,13 +301,22 @@ export default function ResearchSection() {
         timestamp: new Date().toISOString(),
       };
       addResearchJob(job);
+
+      // Prevent restore logic from overriding live domainState
+      setHasRestored(true);
+
+      // Persist to store so restore logic works on remount
+      updateConditions(jobConditions);
+      setResearchTheme(theme.trim());
+
+      // Fetch embedding positions for the keyword cloud
+      fetchEmbeddings(accumulated as Record<string, DomainState>);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Research failed";
       setResearchError(message);
     } finally {
       setIsResearching(false);
       setResearchingDomains(new Set());
-      // Clear any remaining isResearching flags
       setDomainState((prev) => {
         const next = { ...prev };
         for (const d of DOMAINS) {
@@ -196,24 +330,30 @@ export default function ResearchSection() {
   };
 
   const handleProposeConcepts = async () => {
+    if (selectedKeywordTexts.length === 0) return;
     setIsProposingConcepts(true);
     setConceptError(null);
 
-    const currentConditions: ResearchCondition[] = DOMAINS.map((d) => ({
-      domain: d.key,
-      notes: domainState[d.key].notes,
-      weight: domainState[d.key].weight / 100,
-      tags: domainState[d.key].tags,
-      findings: domainState[d.key].findings,
-      weightRationale: domainState[d.key].weightRationale,
-      relatedDomains: domainState[d.key].relatedDomains,
-    }));
+    // Build selected keywords with their findings
+    const selectedKeywords: { text: string; domain: string; findings: string[] }[] = [];
+    for (const key of Object.values(ResearchDomain)) {
+      const ds = domainState[key];
+      const keywords = ds.keywords ?? [];
+      for (const kw of keywords) {
+        if (selectedKeywordsSet.has(kw.text)) {
+          const findings = (kw.findingIndices ?? [])
+            .map((idx) => ds.findings?.[idx]?.text)
+            .filter((t): t is string => !!t);
+          selectedKeywords.push({ text: kw.text, domain: key, findings });
+        }
+      }
+    }
 
     try {
       const res = await fetch("/api/concepts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ theme: theme.trim(), conditions: currentConditions }),
+        body: JSON.stringify({ theme: theme.trim(), selectedKeywords }),
       });
 
       if (!res.ok) {
@@ -226,7 +366,6 @@ export default function ResearchSection() {
         const proposed = data.concepts.slice(0, 2);
         setConcepts(proposed);
         setSelectedConcepts(proposed);
-        setWeightsChangedSinceConcept(false);
       } else {
         throw new Error("Expected 2 concepts from API");
       }
@@ -247,10 +386,9 @@ export default function ResearchSection() {
     const currentConditions: ResearchCondition[] = DOMAINS.map((d) => ({
       domain: d.key,
       notes: domainState[d.key].notes,
-      weight: domainState[d.key].weight / 100,
       tags: domainState[d.key].tags,
       findings: domainState[d.key].findings,
-      weightRationale: domainState[d.key].weightRationale,
+      keywords: domainState[d.key].keywords,
       relatedDomains: domainState[d.key].relatedDomains,
     }));
 
@@ -316,20 +454,29 @@ export default function ResearchSection() {
       }
 
       const result = await res.json();
+      const key = domainKey;
 
-      setDomainState((prev) => ({
-        ...prev,
-        [domainKey]: {
-          ...prev[domainKey],
-          notes: result.notes || prev[domainKey].notes,
-          weight: typeof result.weight === "number" ? result.weight : prev[domainKey].weight,
-          tags: Array.isArray(result.tags) ? result.tags : prev[domainKey].tags,
-          findings: Array.isArray(result.findings) ? result.findings : prev[domainKey].findings,
-          weightRationale: typeof result.weight_rationale === "string" ? result.weight_rationale : prev[domainKey].weightRationale,
-          relatedDomains: Array.isArray(result.related_domains) ? result.related_domains : prev[domainKey].relatedDomains,
-          isResearching: false,
-        },
-      }));
+      const apiKeywords: ResearchKeyword[] = Array.isArray(result.keywords)
+        ? result.keywords.map((k: { text: string; relevance: number; finding_indices?: number[] }) => ({
+            text: k.text,
+            relevance: typeof k.relevance === "number" ? k.relevance : 50,
+            domain: key,
+            findingIndices: Array.isArray(k.finding_indices) ? k.finding_indices : [],
+          }))
+        : [];
+
+      const updatedState: Record<string, DomainState> = { ...domainState };
+      updatedState[domainKey] = {
+        ...domainState[domainKey],
+        notes: result.notes || domainState[domainKey].notes,
+        tags: Array.isArray(result.tags) ? result.tags : domainState[domainKey].tags,
+        findings: Array.isArray(result.findings) ? result.findings : domainState[domainKey].findings,
+        keywords: apiKeywords.length > 0 ? apiKeywords : domainState[domainKey].keywords,
+        relatedDomains: Array.isArray(result.related_domains) ? result.related_domains : domainState[domainKey].relatedDomains,
+        isResearching: false,
+      };
+      setDomainState(updatedState as Record<ResearchDomain, DomainState>);
+      fetchEmbeddings(updatedState);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Domain research failed";
       setResearchError(message);
@@ -369,14 +516,28 @@ export default function ResearchSection() {
       const newFindings: ResearchFinding[] = Array.isArray(result.findings) ? result.findings : [];
       const existingFindings = domainState[domainKey].findings ?? [];
 
-      setDomainState((prev) => ({
-        ...prev,
-        [domainKey]: {
-          ...prev[domainKey],
-          findings: [...existingFindings, ...newFindings],
-          isResearching: false,
-        },
-      }));
+      const apiKeywords: ResearchKeyword[] = Array.isArray(result.keywords)
+        ? result.keywords.map((k: { text: string; relevance: number; finding_indices?: number[] }) => ({
+            text: k.text,
+            relevance: typeof k.relevance === "number" ? k.relevance : 50,
+            domain: domainKey,
+            findingIndices: Array.isArray(k.finding_indices)
+              ? k.finding_indices.map((idx: number) => idx + existingFindings.length)
+              : [],
+          }))
+        : [];
+
+      const existingKeywords = domainState[domainKey].keywords ?? [];
+
+      const updatedState: Record<string, DomainState> = { ...domainState };
+      updatedState[domainKey] = {
+        ...domainState[domainKey],
+        findings: [...existingFindings, ...newFindings],
+        keywords: [...existingKeywords, ...apiKeywords],
+        isResearching: false,
+      };
+      setDomainState(updatedState as Record<ResearchDomain, DomainState>);
+      fetchEmbeddings(updatedState);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Deep dive failed";
       setResearchError(message);
@@ -392,14 +553,13 @@ export default function ResearchSection() {
       (d) =>
         domainState[d.key].notes ||
         domainState[d.key].tags.length > 0 ||
-        domainState[d.key].weight > 0
+        (domainState[d.key].keywords ?? []).length > 0
     ).map((d) => ({
       domain: d.key,
       notes: domainState[d.key].notes,
-      weight: domainState[d.key].weight / 100,
       tags: domainState[d.key].tags,
       findings: domainState[d.key].findings,
-      weightRationale: domainState[d.key].weightRationale,
+      keywords: domainState[d.key].keywords,
       relatedDomains: domainState[d.key].relatedDomains,
     }));
 
@@ -411,11 +571,13 @@ export default function ResearchSection() {
     document.getElementById("generate")?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const activeCount = DOMAINS.filter(
-    (d) =>
-      domainState[d.key].weight > 0 &&
-      (domainState[d.key].notes || domainState[d.key].tags.length > 0)
-  ).length;
+  const totalKeywords = useMemo(() => {
+    let count = 0;
+    for (const key of Object.values(ResearchDomain)) {
+      count += (domainState[key].keywords ?? []).length;
+    }
+    return count;
+  }, [domainState]);
 
   const modalDomain = detailModal ? DOMAINS.find((d) => d.key === detailModal) : null;
 
@@ -437,9 +599,10 @@ export default function ResearchSection() {
         Research / リサーチ
       </h2>
       <p className="mt-1 text-sm text-slate-500">
-        テーマを入力すると、AIが6つの領域から多角的にリサーチを行います。
+        テーマを入力すると、AIが6つの領域から多角的にリサーチを行い、キーワードを抽出します。
       </p>
 
+      {/* Theme input + Research button */}
       <div className="mt-5 rounded-lg border border-slate-600 bg-slate-800/80 p-5">
         <label className="mb-2 block text-sm font-medium text-slate-300">
           Theme
@@ -466,6 +629,8 @@ export default function ResearchSection() {
             {isResearching ? "Researching..." : "Research"}
           </button>
         </div>
+
+        {/* Progress indicator */}
         {isResearching && (
           <div className="mt-3 flex items-center gap-3 text-sm text-slate-400">
             <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-500/30 border-t-blue-400" />
@@ -492,90 +657,115 @@ export default function ResearchSection() {
         )}
       </div>
 
-      {/* View Mode Toggle */}
-      <div className="mt-6 flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800/60 p-1 w-fit">
-        <button
-          onClick={() => setViewMode("cards")}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-            viewMode === "cards"
-              ? "gradient-accent-subtle text-blue-300 border border-blue-500/30"
-              : "text-slate-500 hover:text-slate-300 hover:bg-slate-700/50"
-          }`}
-        >
-          Cards
-        </button>
-        <button
-          onClick={() => setViewMode("graph")}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-            viewMode === "graph"
-              ? "gradient-accent-subtle text-blue-300 border border-blue-500/30"
-              : "text-slate-500 hover:text-slate-300 hover:bg-slate-700/50"
-          }`}
-        >
-          Graph
-        </button>
-        <button
-          onClick={() => setViewMode("matrix")}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-            viewMode === "matrix"
-              ? "gradient-accent-subtle text-blue-300 border border-blue-500/30"
-              : "text-slate-500 hover:text-slate-300 hover:bg-slate-700/50"
-          }`}
-        >
-          Matrix
-        </button>
+      {/* Domain Results Grid */}
+      {totalKeywords > 0 && (
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {DOMAINS.map((d) => {
+            const ds = domainState[d.key];
+            const findingsCount = ds.findings?.length ?? 0;
+            const kwCount = (ds.keywords ?? []).length;
+            if (findingsCount === 0 && kwCount === 0) return null;
+            const color = DOMAIN_COLORS[d.key] ?? "#a1a1aa";
+            return (
+              <button
+                key={d.key}
+                onClick={() => setDetailModal(d.key)}
+                className="group rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-left transition-colors hover:border-slate-500 hover:bg-slate-700/60"
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="inline-block h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: color }}
+                  />
+                  <span className="text-sm font-medium text-slate-200">
+                    {d.ja}
+                  </span>
+                </div>
+                <div className="mt-1.5 flex items-center gap-3 text-xs text-slate-500">
+                  {findingsCount > 0 && <span>{findingsCount} findings</span>}
+                  {kwCount > 0 && <span>{kwCount} keywords</span>}
+                </div>
+                {ds.isResearching && (
+                  <div className="mt-1.5">
+                    <span className="inline-block h-3 w-3 animate-spin rounded-full border border-slate-500 border-t-blue-400" />
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Keyword Cloud */}
+      <div className="mt-6">
+        <KeywordCloud
+          domainState={domainState}
+          positions={embeddingPositions}
+          selectedKeywords={selectedKeywordsSet}
+          onToggleKeyword={toggleKeyword}
+        />
       </div>
 
-      {/* Domain Cards + Summary / Graph / Matrix */}
-      {viewMode === "cards" ? (
-        <div className="mt-4 grid grid-cols-1 gap-6 xl:grid-cols-[1fr_300px]">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {DOMAINS.map((d) => (
-              <DomainCard
-                key={d.key}
-                domain={d}
-                state={domainState[d.key]}
-                onChange={handleChange}
-                onOpenDetail={() => setDetailModal(d.key)}
-                onResearchDomain={() => handleResearchDomain(d.key)}
-              />
-            ))}
+      {/* Selected Keywords Bar */}
+      {totalKeywords > 0 && (
+        <div className="mt-4 flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-slate-200">
+              {keywordSelectionInfo.total}個選択中
+            </span>
+            <div className="flex items-center gap-2">
+              {Object.entries(keywordSelectionInfo.domainCounts).map(([domain, count]) => (
+                <span
+                  key={domain}
+                  className="flex items-center gap-1 text-xs text-slate-400"
+                >
+                  <span
+                    className="inline-block h-2 w-2 rounded-full"
+                    style={{ backgroundColor: DOMAIN_COLORS[domain] }}
+                  />
+                  {DOMAIN_LABELS[domain]}: {count}
+                </span>
+              ))}
+            </div>
+            {keywordSelectionInfo.total > 0 && (
+              <button
+                onClick={clearSelectedKeywords}
+                className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                クリア
+              </button>
+            )}
           </div>
-
-          <aside className="xl:sticky xl:top-20 xl:self-start">
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">
-              Condition Summary
-            </h3>
-            <SummaryPanel domains={DOMAINS} state={domainState} />
-
-            <JobHistory jobs={researchJobs} onLoad={handleLoadJob} />
-          </aside>
-        </div>
-      ) : viewMode === "graph" ? (
-        <div className="mt-4">
-          <Suspense
-            fallback={
-              <div className="flex h-[600px] items-center justify-center rounded-lg border border-slate-700 bg-slate-800">
-                <span className="text-sm text-slate-500">グラフを読み込み中...</span>
-              </div>
-            }
+          <button
+            onClick={handleProposeConcepts}
+            disabled={isProposingConcepts || keywordSelectionInfo.total === 0 || !theme.trim()}
+            className="rounded-lg gradient-accent px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:scale-105 hover:shadow-blue-600/40 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-500 disabled:shadow-none"
           >
-            <ResearchGraph
-              theme={theme}
-              domainState={domainState}
-              concepts={concepts}
-              onOpenDomainDetail={(domain) => setDetailModal(domain)}
-            />
-          </Suspense>
+            {isProposingConcepts ? "Proposing..." : "コンセプトを生成"}
+          </button>
         </div>
-      ) : (
+      )}
+
+      {/* Job History */}
+      {researchJobs.length > 0 && (
         <div className="mt-4">
-          <CorrelationMatrix domainState={domainState} />
+          <JobHistory jobs={researchJobs} onLoad={handleLoadJob} />
         </div>
       )}
 
       {/* Concept Proposal Section */}
-      {activeCount > 0 && (
+      {isProposingConcepts && (
+        <div className="mt-4 flex items-center gap-2 text-sm text-slate-400">
+          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-500/30 border-t-blue-400" />
+          コンセプト方向性を分析中...
+        </div>
+      )}
+
+      {conceptError && (
+        <p className="mt-4 text-sm text-red-400">{conceptError}</p>
+      )}
+
+      {concepts.length >= 2 && (
         <div className="mt-6 rounded-lg border border-slate-700 bg-slate-800/40 p-5">
           <div className="flex items-center justify-between">
             <div>
@@ -583,121 +773,90 @@ export default function ResearchSection() {
                 Architectural Concepts / コンセプト方向性
               </h3>
               <p className="mt-0.5 text-xs text-slate-500">
-                リサーチ結果と各領域の比重から、2つの対照的な建築コンセプトを提案します。
+                選択したキーワードから、2つの対照的な建築コンセプトを提案しました。
               </p>
             </div>
             <button
               onClick={handleProposeConcepts}
-              disabled={isProposingConcepts || !theme.trim()}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 ${
-                weightsChangedSinceConcept
-                  ? "gradient-accent text-white hover:scale-105"
-                  : "bg-slate-600 text-slate-200 hover:bg-slate-500"
-              }`}
+              disabled={isProposingConcepts || keywordSelectionInfo.total === 0 || !theme.trim()}
+              className="rounded-lg bg-slate-600 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500"
             >
-              {isProposingConcepts ? "Proposing..." : concepts.length >= 2 ? "コンセプトを再提案" : "コンセプトを提案"}
+              {isProposingConcepts ? "Proposing..." : "コンセプトを再提案"}
             </button>
           </div>
 
-          {weightsChangedSinceConcept && concepts.length >= 2 && (
-            <div className="mt-3 rounded border border-yellow-800/50 bg-yellow-900/20 px-3 py-2 text-xs text-yellow-300/80">
-              比重が変更されました。「コンセプトを再提案」で新しい比重に基づくコンセプトを生成できます。
-            </div>
-          )}
-
-          <p className="mt-3 text-xs leading-relaxed text-slate-400">
-            AIがリサーチで得られた6領域の知見と比重を分析し、対比・緊張関係にある2つの建築コンセプト方向性を提案します。比重を変更した後に再提案すると、新しい比重に基づいたコンセプトが生成されます。タイトルと説明は編集可能です。
-          </p>
-
-          {isProposingConcepts && (
-            <div className="mt-3 flex items-center gap-2 text-sm text-slate-400">
-              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-500/30 border-t-blue-400" />
-              コンセプト方向性を分析中...
-            </div>
-          )}
-
-          {conceptError && (
-            <p className="mt-3 text-sm text-red-400">{conceptError}</p>
-          )}
-
-          {concepts.length >= 2 && (
-            <div className="mt-4">
-              <ConceptComparisonPanel
-                concepts={concepts}
-                onChangeA={(updated) => {
-                  const next = [updated, concepts[1]];
-                  setConcepts(next);
-                  setSelectedConcepts(next);
-                }}
-                onChangeB={(updated) => {
-                  const next = [concepts[0], updated];
-                  setConcepts(next);
-                  setSelectedConcepts(next);
-                }}
-              />
-            </div>
-          )}
+          <div className="mt-4">
+            <ConceptComparisonPanel
+              concepts={concepts}
+              onChangeA={(updated) => {
+                const next = [updated, concepts[1]];
+                setConcepts(next);
+                setSelectedConcepts(next);
+              }}
+              onChangeB={(updated) => {
+                const next = [concepts[0], updated];
+                setConcepts(next);
+                setSelectedConcepts(next);
+              }}
+            />
+          </div>
 
           {/* Architecture Config Translation */}
-          {concepts.length >= 2 && (
-            <div className="mt-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-semibold text-slate-200">
-                    Architecture Config / 建築的翻訳
-                  </h4>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    コンセプトを12軸の建築パラメータに翻訳し、生成の精度を高めます。
-                  </p>
-                </div>
-                <button
-                  onClick={handleTranslateToConfig}
-                  disabled={isTranslating}
-                  className="rounded-lg bg-slate-600 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500"
-                >
-                  {isTranslating
-                    ? "翻訳中..."
-                    : concepts[0].architectureConfig
-                    ? "再翻訳"
-                    : "建築的に翻訳"}
-                </button>
+          <div className="mt-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-semibold text-slate-200">
+                  Architecture Config / 建築的翻訳
+                </h4>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  コンセプトを12軸の建築パラメータに翻訳し、生成の精度を高めます。
+                </p>
               </div>
-
-              {isTranslating && (
-                <div className="mt-3 flex items-center gap-2 text-sm text-slate-400">
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-500/30 border-t-blue-400" />
-                  2つのコンセプトを建築パラメータに翻訳中...
-                </div>
-              )}
-
-              {translateError && (
-                <p className="mt-3 text-sm text-red-400">{translateError}</p>
-              )}
-
-              {concepts[0].architectureConfig && concepts[1].architectureConfig && (
-                <div className="mt-4 space-y-4">
-                  <ConfigComparisonTable
-                    configA={concepts[0].architectureConfig}
-                    configB={concepts[1].architectureConfig}
-                  />
-                  <ConceptBlendPanel
-                    configA={concepts[0].architectureConfig}
-                    configB={concepts[1].architectureConfig}
-                    theme={theme}
-                  />
-                </div>
-              )}
+              <button
+                onClick={handleTranslateToConfig}
+                disabled={isTranslating}
+                className="rounded-lg bg-slate-600 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500"
+              >
+                {isTranslating
+                  ? "翻訳中..."
+                  : concepts[0].architectureConfig
+                  ? "再翻訳"
+                  : "建築的に翻訳"}
+              </button>
             </div>
-          )}
 
-          {concepts.length >= 2 && (
-            <button
-              onClick={handleProceed}
-              className="mt-5 w-full rounded-lg gradient-accent px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:scale-105 hover:shadow-blue-600/40"
-            >
-              Proceed to Generate
-            </button>
-          )}
+            {isTranslating && (
+              <div className="mt-3 flex items-center gap-2 text-sm text-slate-400">
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-500/30 border-t-blue-400" />
+                2つのコンセプトを建築パラメータに翻訳中...
+              </div>
+            )}
+
+            {translateError && (
+              <p className="mt-3 text-sm text-red-400">{translateError}</p>
+            )}
+
+            {concepts[0].architectureConfig && concepts[1].architectureConfig && (
+              <div className="mt-4 space-y-4">
+                <ConfigComparisonTable
+                  configA={concepts[0].architectureConfig}
+                  configB={concepts[1].architectureConfig}
+                />
+                <ConceptBlendPanel
+                  configA={concepts[0].architectureConfig}
+                  configB={concepts[1].architectureConfig}
+                  theme={theme}
+                />
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleProceed}
+            className="mt-5 w-full rounded-lg gradient-accent px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:scale-105 hover:shadow-blue-600/40"
+          >
+            Proceed to Generate
+          </button>
         </div>
       )}
     </div>

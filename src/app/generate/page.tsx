@@ -89,14 +89,14 @@ function ConditionPanel({
                 {domainLabel(c.domain)}
               </span>
               <span className="font-mono text-xs text-slate-500">
-                {Math.round(c.weight * 100)}
+                {Math.round((c.weight ?? 0.5) * 100)}
               </span>
             </div>
             <input
               type="range"
               min={0}
               max={100}
-              value={Math.round(c.weight * 100)}
+              value={Math.round((c.weight ?? 0.5) * 100)}
               onChange={(e) => onWeightChange(i, parseInt(e.target.value, 10) / 100)}
               className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-slate-600 accent-blue-500"
             />
@@ -318,8 +318,8 @@ export default function GeneratePage() {
   // Top two conditions by weight for spectrum
   const topTwo = useMemo(() => {
     const sorted = [...activeConditions]
-      .filter((c) => c.weight > 0.2)
-      .sort((a, b) => b.weight - a.weight);
+      .filter((c) => (c.weight ?? 0.5) > 0.2)
+      .sort((a, b) => (b.weight ?? 0.5) - (a.weight ?? 0.5));
     return sorted.length >= 2 ? [sorted[0], sorted[1]] : null;
   }, [activeConditions]);
 
@@ -343,7 +343,7 @@ export default function GeneratePage() {
     const prompt = buildPrompt();
     const apiConditions = activeConditions.map((c) => ({
       domain: c.domain,
-      weight: c.weight,
+      weight: c.weight ?? 0.5,
       notes: c.notes,
     }));
 

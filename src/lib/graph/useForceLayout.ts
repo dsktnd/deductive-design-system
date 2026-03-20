@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import type { GraphNode, GraphEdge } from "./buildResearchGraph";
+import type { GraphNode, GraphEdge } from "./types";
 
 // --- Force simulation ---
 

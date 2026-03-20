@@ -69,14 +69,14 @@ export async function POST(req: NextRequest) {
     { "type": "opportunity", "text": "機会の記述" }
   ],
   "notes": "調査結果の要約テキスト",
-  "weight": 75,
-  "weight_rationale": "なぜこの重要度か",
-  "tags": ["tag1", "tag2", "tag3"],
+  "keywords": [
+    { "text": "キーワード", "relevance": 85, "finding_indices": [0, 2] }
+  ],
   "related_domains": ["economy", "society"]
 }
 
 findingsは各カテゴリ(fact, implication, risk, opportunity)で${body.deepDiveQuestion ? "2-4" : "1-3"}個ずつ提供してください。
-weight は 0-100 の重要度スコアです。
+keywords は10-15個の重要キーワード。relevanceは0-100（そのキーワードの重要度・頻出度）。finding_indicesはfindings配列内のどの知見に関連するかのインデックス（0始まり）。キーワードは建築デザインに影響する具体的な概念・要素・条件を抽出すること。
 related_domains は environment, market, culture, economy, society, technology のうち関連が強いものを選んでください。`;
 
   try {

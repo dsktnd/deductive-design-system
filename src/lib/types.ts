@@ -24,13 +24,20 @@ export interface ResearchFinding {
   excluded?: boolean;
 }
 
+export interface ResearchKeyword {
+  text: string;
+  relevance: number;        // 0-100 (word cloud size)
+  domain: ResearchDomain;
+  findingIndices: number[];  // indices into findings array
+}
+
 export interface ResearchCondition {
   domain: ResearchDomain;
   notes: string;
-  weight: number;
+  weight?: number;  // legacy — used by generation pipeline, not set by new research UI
   tags: string[];
   findings?: ResearchFinding[];
-  weightRationale?: string;
+  keywords?: ResearchKeyword[];
   relatedDomains?: ResearchDomain[];
 }
 
@@ -244,10 +251,9 @@ export interface ProcessLog {
 
 export interface DomainState {
   notes: string;
-  weight: number;
   tags: string[];
   findings?: ResearchFinding[];
-  weightRationale?: string;
+  keywords?: ResearchKeyword[];
   relatedDomains?: ResearchDomain[];
   isResearching?: boolean;
 }

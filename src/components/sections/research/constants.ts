@@ -18,6 +18,15 @@ export const DOMAIN_LABELS: Record<string, string> = {
   technology: "技術",
 };
 
+export const DOMAIN_COLORS: Record<string, string> = {
+  environment: "#4ade80", // green-400
+  market: "#f472b6",      // pink-400
+  culture: "#c084fc",     // purple-400
+  economy: "#facc15",     // yellow-400
+  society: "#38bdf8",     // sky-400
+  technology: "#fb923c",  // orange-400
+};
+
 export const FINDING_CONFIG: Record<string, { label: string; labelJa: string; color: string; bg: string }> = {
   fact: { label: "Facts", labelJa: "事実", color: "text-blue-400", bg: "bg-blue-400/10" },
   implication: { label: "Implications", labelJa: "示唆", color: "text-amber-400", bg: "bg-amber-400/10" },
@@ -28,7 +37,7 @@ export const FINDING_CONFIG: Record<string, { label: string; labelJa: string; co
 export function createInitialState(): Record<ResearchDomain, DomainState> {
   const state = {} as Record<ResearchDomain, DomainState>;
   for (const d of DOMAINS) {
-    state[d.key] = { notes: "", weight: 50, tags: [] };
+    state[d.key] = { notes: "", tags: [], keywords: [] };
   }
   return state;
 }
@@ -39,10 +48,9 @@ export function conditionsToState(conditions: ResearchCondition[]): Record<Resea
     if (state[c.domain as ResearchDomain]) {
       state[c.domain as ResearchDomain] = {
         notes: c.notes,
-        weight: Math.round(c.weight * 100),
         tags: c.tags,
         findings: c.findings,
-        weightRationale: c.weightRationale,
+        keywords: c.keywords ?? [],
         relatedDomains: c.relatedDomains,
       };
     }

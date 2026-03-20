@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import type { ResearchCondition } from "@/lib/types";
+
+interface SelectedKeyword {
+  text: string;
+  domain: string;
+  findings: string[];
+}
 
 export async function POST(req: NextRequest) {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -8,35 +13,39 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "GEMINI_API_KEY is not configured" }, { status: 500 });
   }
 
-  let body: { theme: string; conditions: ResearchCondition[] };
+  let body: { theme: string; selectedKeywords: SelectedKeyword[] };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  if (!body.theme || !body.conditions || body.conditions.length === 0) {
-    return NextResponse.json({ error: "theme and conditions are required" }, { status: 400 });
+  if (!body.theme || !body.selectedKeywords || body.selectedKeywords.length === 0) {
+    return NextResponse.json({ error: "theme and selectedKeywords are required" }, { status: 400 });
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-  const conditionSummary = body.conditions
-    .filter((c) => c.notes || c.tags.length > 0)
-    .map((c) => `- ${c.domain} (weight: ${c.weight}): ${c.notes} [${c.tags.join(", ")}]`)
+  const keywordSummary = body.selectedKeywords
+    .map((kw) => {
+      const findingsText = kw.findings.length > 0
+        ? `\n    根拠: ${kw.findings.join(" / ")}`
+        : "";
+      return `  - ${kw.text} (${kw.domain})${findingsText}`;
+    })
     .join("\n");
 
-  const prompt = `あなたは建築デザインのコンセプトストラテジストです。以下のリサーチ結果に基づいて、2つの対照的な建築コンセプト方向性を提案してください。
+  const prompt = `あなたは建築デザインのコンセプトストラテジストです。以下のリサーチから抽出されたキーワード群に基づいて、2つの対照的な建築コンセプト方向性を提案してください。
 
 テーマ: ${body.theme.trim()}
 
-リサーチ結果:
-${conditionSummary}
+選択されたキーワード:
+${keywordSummary}
 
 要件:
 1. 2つのコンセプトは対比・緊張関係にあること（例: 閉鎖的 vs 開放的、伝統的 vs 革新的、環境共生 vs 都市密度）
-2. どちらもリサーチ結果に根拠があること
+2. どちらも選択されたキーワードとその根拠に基づくこと
 3. どちらも建築的に実現可能で魅力的であること
 4. タイトルは短く（2-4語）、日本語で
 5. 説明は1-2文で、建築的な方向性を具体的に記述

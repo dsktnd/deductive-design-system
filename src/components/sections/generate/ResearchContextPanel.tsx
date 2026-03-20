@@ -16,12 +16,12 @@ function ResearchContextPanel({
   const [expanded, setExpanded] = useState(false);
 
   const activeConditions = conditions
-    .filter((c) => c.weight > 0 && (c.notes || c.tags.length > 0))
-    .sort((a, b) => b.weight - a.weight);
+    .filter((c) => (c.notes || c.tags.length > 0))
+    .sort((a, b) => (b.weight ?? 0.5) - (a.weight ?? 0.5));
 
   if (activeConditions.length === 0 && !researchTheme) return null;
 
-  const maxWeight = Math.max(...activeConditions.map((c) => c.weight), 0.01);
+  const maxWeight = Math.max(...activeConditions.map((c) => c.weight ?? 0.5), 0.01);
   const totalTags = activeConditions.reduce((sum, c) => sum + c.tags.length, 0);
   const hasConcepts = selectedConcepts.length >= 2;
 
@@ -67,7 +67,7 @@ function ResearchContextPanel({
           {/* Condition weight bars */}
           <div className="space-y-2">
             {activeConditions.map((c) => {
-              const pct = (c.weight / maxWeight) * 100;
+              const pct = ((c.weight ?? 0.5) / maxWeight) * 100;
               return (
                 <div key={c.domain}>
                   <div className="mb-0.5 flex items-center justify-between">
@@ -88,7 +88,7 @@ function ResearchContextPanel({
                       )}
                     </div>
                     <span className="font-mono text-[10px] text-slate-500">
-                      {Math.round(c.weight * 100)}
+                      {Math.round((c.weight ?? 0.5) * 100)}
                     </span>
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-700">

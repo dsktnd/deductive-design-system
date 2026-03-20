@@ -112,6 +112,7 @@ interface PersistedState {
   generateJobs: GenerateJob[];
   generateImages: GeneratedImage[];
   selectedConcepts: ArchitecturalConcept[];
+  selectedKeywordTexts: string[];
   refinedConcept: RefinedConcept | null;
   sceneConstraint: string;
   detailImages: Record<string, GeneratedImage>;
@@ -129,6 +130,7 @@ function defaultPersistedState(): PersistedState {
     generateJobs: [],
     generateImages: [],
     selectedConcepts: [],
+    selectedKeywordTexts: [],
     refinedConcept: null,
     sceneConstraint: "",
     detailImages: {},
@@ -192,6 +194,9 @@ interface AppState extends PersistedState {
   loadResearchJob: (jobId: string) => void;
   selectedConcepts: ArchitecturalConcept[];
   setSelectedConcepts: (concepts: ArchitecturalConcept[]) => void;
+  selectedKeywordTexts: string[];
+  toggleKeyword: (text: string) => void;
+  clearSelectedKeywords: () => void;
 
   // Generation actions
   setGeneratedDesigns: (designs: GeneratedDesign[]) => void;
@@ -234,6 +239,7 @@ function collectPersisted(state: AppState): PersistedState {
     generateJobs: state.generateJobs,
     generateImages: state.generateImages,
     selectedConcepts: state.selectedConcepts,
+    selectedKeywordTexts: state.selectedKeywordTexts,
     refinedConcept: state.refinedConcept,
     sceneConstraint: state.sceneConstraint,
     detailImages: state.detailImages,
@@ -277,6 +283,19 @@ export const useStore = create<AppState>()(
 
       setSelectedConcepts: (concepts) =>
         set((s) => { s.selectedConcepts = concepts; }),
+
+      toggleKeyword: (text) =>
+        set((s) => {
+          const idx = s.selectedKeywordTexts.indexOf(text);
+          if (idx >= 0) {
+            s.selectedKeywordTexts.splice(idx, 1);
+          } else {
+            s.selectedKeywordTexts.push(text);
+          }
+        }),
+
+      clearSelectedKeywords: () =>
+        set((s) => { s.selectedKeywordTexts = []; }),
 
       // --- Generation actions ---
 
@@ -501,8 +520,8 @@ if (typeof window !== "undefined") {
   const PERSISTED_KEYS: (keyof PersistedState)[] = [
     "conditions", "researchTheme", "generatedDesigns", "filteredDesigns",
     "researchJobs", "generateJobs", "generateImages", "selectedConcepts",
-    "refinedConcept", "sceneConstraint", "detailImages", "evaluationResults",
-    "atmosphere",
+    "selectedKeywordTexts", "refinedConcept", "sceneConstraint", "detailImages",
+    "evaluationResults", "atmosphere",
   ];
 
   useStore.subscribe(
